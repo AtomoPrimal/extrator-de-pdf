@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
-from typing import Optional
-from fastapi import FastAPI, File, Form, UploadFile, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from app.schemas import NotaFiscalExtracao
+from fastapi.responses import HTMLResponse
+
 from app.extractor import extract_invoice_data
+from app.schemas import NotaFiscalExtracao
 
 app = FastAPI(
     title="Extrator de Dados de Nota Fiscal com Gemini",
@@ -37,10 +38,13 @@ async def read_root():
         raise HTTPException(status_code=500, detail="Template index.html não encontrado.")
     return HTMLResponse(content=html_file.read_text(encoding="utf-8"))
 
+from typing import Annotated
+
+
 @app.post("/api/extrair", response_model=NotaFiscalExtracao)
 async def extrair_nota(
-    file: UploadFile = File(...),
-    api_key: Optional[str] = Form(None)
+    file: Annotated[UploadFile, File(description="Arquivo PDF da Nota Fiscal")],
+    api_key: Annotated[str | None, Form(description="Chave de API Gemini opcional")] = None,
 ):
     """
     Recebe um arquivo PDF de nota fiscal e extrai os dados estruturados usando Gemini.
@@ -60,13 +64,13 @@ async def extrair_nota(
         return resultado
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=500,
-            detail=f"Falha ao processar documento com Gemini: {str(e)}"
+            detail=f"Falha ao processar documento com Gemini: {e!s}"
         )
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", "8000"))
     uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

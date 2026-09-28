@@ -1,11 +1,12 @@
-import os
 import json
+import os
 import re
-from typing import Optional
+
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from app.schemas import NotaFiscalExtracao, CATEGORIAS_DESPESA_VALIDAS
+
+from app.schemas import CATEGORIAS_DESPESA_VALIDAS, NotaFiscalExtracao
 
 # Load .env file if present
 load_dotenv()
@@ -52,7 +53,7 @@ REGRAS DE EXTRAÇÃO:
 
 def extract_invoice_data(
     pdf_bytes: bytes,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     model_name: str = "gemini-2.5-flash"
 ) -> NotaFiscalExtracao:
     """

@@ -1,12 +1,14 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.schemas import NotaFiscalExtracao
+
 
 def test_extract_invoice_data_raises_without_api_key():
     from app.extractor import extract_invoice_data
-    with patch.dict("os.environ", {}, clear=True):
-        with pytest.raises(ValueError, match="GEMINI_API_KEY"):
-            extract_invoice_data(b"%PDF-1.4 mock content", api_key=None)
+    with patch.dict("os.environ", {}, clear=True), pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        extract_invoice_data(b"%PDF-1.4 mock content", api_key=None)
 
 def test_extract_invoice_data_success_mock():
     from app.extractor import extract_invoice_data

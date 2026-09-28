@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import patch
+
 from fastapi.testclient import TestClient
+
 from app.schemas import NotaFiscalExtracao
+
 
 def test_api_health():
     from app.main import app

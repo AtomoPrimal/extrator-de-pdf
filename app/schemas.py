@@ -1,4 +1,4 @@
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 CATEGORIAS_DESPESA_VALIDAS = [
@@ -15,7 +15,7 @@ CATEGORIAS_DESPESA_VALIDAS = [
 
 class Fornecedor(BaseModel):
     razao_social: str = Field(description="Razão Social do Fornecedor/Emitente")
-    nome_fantasia: Optional[str] = Field(default=None, description="Nome Fantasia do Fornecedor")
+    nome_fantasia: str | None = Field(default=None, description="Nome Fantasia do Fornecedor")
     cnpj: str = Field(description="CNPJ do Fornecedor")
 
 class Faturado(BaseModel):
@@ -39,11 +39,11 @@ class NotaFiscalExtracao(BaseModel):
     classificacao_despesa: str = Field(
         description="Classificação da despesa inferida via IA com base nos produtos. Ex: MANUTENÇÃO E OPERAÇÃO, INSUMOS AGRÍCOLAS, etc."
     )
-    justificativa_classificacao: Optional[str] = Field(
+    justificativa_classificacao: str | None = Field(
         default=None,
         description="Breve justificativa do motivo pelo qual a LLM atribuiu essa classificação de despesa"
     )
-    parcelas: List[Parcela] = Field(
+    parcelas: list[Parcela] = Field(
         default_factory=list,
         description="Lista de parcelas com seus respectivos vencimentos e valores"
     )

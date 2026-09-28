@@ -1,8 +1,6 @@
-import pytest
-from pydantic import ValidationError
 
 def test_nota_fiscal_extracao_schema():
-    from app.schemas import NotaFiscalExtracao, Fornecedor, Faturado, Parcela
+    from app.schemas import NotaFiscalExtracao
 
     sample_data = {
         "fornecedor": {
