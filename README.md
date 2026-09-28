@@ -1,149 +1,59 @@
 # Extrator de Dados de Nota Fiscal com LLM
 
-Aplicação Web em Python para extração estruturada de dados de Notas Fiscais Eletrônicas (DANFE / Contas a Pagar) em formato PDF e classificação inteligente de despesas com inferência via Inteligência Artificial (LLMs).
+Aplicação Web em Python para extração de dados de notas fiscais (DANFE em PDF) e classificação automática de despesas utilizando IA (Google Gemini e Groq Cloud).
 
-Projeto desenvolvido para a **1ª Etapa da Avaliação N2** do Projeto Administrativo-Financeiro (UniRV - Universidade de Rio Verde).
-
----
-
-## 🔗 Links de Acesso
-
-* **Aplicação em Produção (Render):** [https://extrator-de-pdf-7onu.onrender.com](https://extrator-de-pdf-7onu.onrender.com)
-* **Repositório no GitHub:** [https://github.com/AtomoPrimal/extrator-de-pdf](https://github.com/AtomoPrimal/extrator-de-pdf)
+Desenvolvido para a **Avaliação N2 - Etapa 1** (UniRV - Universidade de Rio Verde).
 
 ---
 
-## 🎯 Funcionalidades Principais
+## 🔗 Links
 
-1. **Upload de Documento PDF (DANFE):**
-   - Suporte a arrastar e soltar (drag & drop) ou seleção manual de arquivos `.pdf`.
-   - Extração local instantânea do texto via `pypdf`, evitando gargalos de processamento de imagem e latência.
-
-2. **Extração Estruturada dos Dados Obrigatórios:**
-   - **Fornecedor (Emitente):** Razão Social, Nome Fantasia e CNPJ.
-   - **Faturado (Destinatário):** Nome Completo e CPF (produtor rural ou filhos: Beltrano, Fulano ou Ciclano).
-   - **Dados da Nota:** Número da NF-e, Data de Emissão, Data de Vencimento e Valor Total.
-   - **Itens e Parcelas:** Descrição consolidada dos produtos e detalhamento do array de duplicatas/parcelas.
-
-3. **Classificação Automática de Despesas (Inferência via IA):**
-   - O tipo da despesa não existe de forma literal na nota fiscal; a LLM analisa o conjunto de itens adquiridos e categoriza a despesa de acordo com o plano de contas:
-     - `MANUTENÇÃO E OPERAÇÃO` (Peças, lubrificantes, filtros, rolamentos, reparos, combustíveis)
-     - `INSUMOS AGRÍCOLAS` (Sementes, adubos, defensivos agrícolas, fertilizantes)
-     - `SERVIÇOS OPERACIONAIS` (Fretes, colheita terceirizada, secagem, armazenagem)
-     - `INFRAESTRUTURA E UTILIDADES` (Materiais elétricos, hidráulicos, reformas)
-     - `ADMINISTRATIVAS`, `RECURSOS HUMANOS`, `SEGUROS E PROTEÇÃO`, `IMPOSTOS E TAXAS`, `INVESTIMENTOS`.
-
-4. **Interface Gráfica e Exportação:**
-   - Design minimalista e limpo, sem elementos visuais supérfluos.
-   - Alternância entre abas: **Visualização Formatada** e **JSON Bruto**.
-   - Botões utilitários: **Copiar JSON** para a área de transferência e **Baixar JSON** (.json) diretamente no navegador.
-   - Painel de resultados com scroll interno dedicado.
-
-5. **Arquitetura Resiliente com Redundância e Failover:**
-   - Suporte a múltiplas chaves Google Gemini (`GEMINI_API_KEY`, `GEMINI_API_KEY_2`).
-   - Contingência automática com **Groq Cloud (Llama 3.3 70B)** para tolerância a falhas caso haja picos de tráfego (503) ou esgotamento de cotas do Google (429).
-   - Timeout de segurança com alternância em loop de redundância.
+- **Aplicação no Render:** [https://extrator-de-pdf-7onu.onrender.com](https://extrator-de-pdf-7onu.onrender.com)
+- **Repositório GitHub:** [https://github.com/AtomoPrimal/extrator-de-pdf](https://github.com/AtomoPrimal/extrator-de-pdf)
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🚀 Funcionalidades
 
-* **Linguagem:** Python 3.11+
-* **Backend Web:** [FastAPI](https://fastapi.tiangolo.com/) & [Uvicorn](https://www.uvicorn.org/)
-* **Validação de Schemas:** [Pydantic v2](https://docs.pydantic.dev/)
-* **Processamento de PDF:** [pypdf](https://pypdf.readthedocs.io/)
-* **Modelos de Linguagem:**
-  * [Google GenAI SDK](https://github.com/google/google-genai-python) (Gemini Flash)
-  * [Groq Cloud API](https://console.groq.com/) (Llama 3.3 70B Versatile)
-* **Frontend:** HTML5, Vanilla CSS responsivo e JavaScript nativo (sem dependências pesadas).
-* **Testes Automatizados:** [pytest](https://docs.pytest.org/) e `pytest-asyncio`.
+- **Upload de PDF:** Processamento rápido e direto de arquivos DANFE.
+- **Extração Estruturada:** Fornecedor (Razão Social, Nome Fantasia, CNPJ), Faturado (Nome, CPF), número da nota, datas, valores e parcelas.
+- **Classificação de Despesa via IA:** Inferência automática da categoria de despesa (ex.: Manutenção e Operação, Insumos Agrícolas) com base nos produtos faturados.
+- **Visualização & Exportação:** Aba com visualização formatada, aba com JSON bruto, botão para copiar e botão para baixar o arquivo JSON.
+- **Redundância:** Suporte a múltiplas chaves e failover automático (Gemini e Groq Cloud).
 
 ---
 
-## 📁 Estrutura de Pastas
+## 🛠️ Tecnologias
 
-```text
-├── app/
-│   ├── extractor.py         # Motor de extração via LLM e loop de redundância
-│   ├── main.py              # Endpoints da API FastAPI (/api/extrair, /health)
-│   ├── schemas.py           # Modelos Pydantic (Fornecedor, Faturado, Parcela, NotaFiscalExtracao)
-│   └── templates/
-│       └── index.html       # Interface Web minimalista com upload, tabs e download JSON
-├── instruções do projeto/  # Documentação de requisitos do cliente e DANFE de exemplo
-├── tests/                   # Suíte de testes unitários e de integração
-│   ├── test_api.py
-│   ├── test_extractor.py
-│   └── test_schemas.py
-├── .env.example             # Modelo de configuração de variáveis de ambiente
-├── main.py                  # Ponto de entrada para inicialização do servidor
-├── README.md                # Documentação técnica do projeto
-└── requirements.txt         # Dependências do projeto
-```
+- **Backend:** Python, FastAPI, Uvicorn
+- **IA / LLM:** Google GenAI (Gemini), Groq Cloud (Llama 3.3)
+- **Processamento & Schemas:** pypdf, Pydantic v2
+- **Frontend:** HTML, CSS e JavaScript nativo (sem frameworks pesados)
 
 ---
 
-## 🚀 Como Executar Localmente
+## 💻 Como Executar Localmente
 
-### 1. Clonar o Repositório
 ```bash
+# 1. Clonar o repositório
 git clone https://github.com/AtomoPrimal/extrator-de-pdf.git
 cd extrator-de-pdf
-```
 
-### 2. Criar e Ativar o Ambiente Virtual
-```bash
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# Linux / macOS
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Instalar Dependências
-```bash
+# 2. Instalar dependências
 pip install -r requirements.txt
-```
 
-### 4. Configurar as Variáveis de Ambiente
-Copie o arquivo `.env.example` para `.env`:
-```bash
-cp .env.example .env
-```
-Edite o arquivo `.env` inserindo sua chave de API:
-```env
-# Chave 1 do Google Gemini (Conta Principal)
-GEMINI_API_KEY=sua_chave_gemini_aqui
+# 3. Configurar chave no arquivo .env
+# GEMINI_API_KEY=sua_chave_aqui
 
-# Chave 2 do Google Gemini (Opcional - Failover)
-GEMINI_API_KEY_2=
-
-# Chave da Groq Cloud (Opcional - Redundância gratuita com Llama 3.3)
-GROQ_API_KEY=
-
-PORT=8000
-```
-
-### 5. Iniciar o Servidor
-```bash
+# 4. Iniciar a aplicação
 python main.py
 ```
-Acesse a aplicação no navegador em: `http://localhost:8000`
+Acesse no navegador: `http://localhost:8000`
 
 ---
 
-## 🧪 Executando os Testes
+## 🧪 Testes
 
-Para rodar a suíte completa de testes unitários e de integração:
 ```bash
-pytest -v
+pytest
 ```
-
----
-
-## 👥 Autores & Contexto Acadêmico
-
-* **Instituição:** UniRV - Universidade de Rio Verde
-* **Projeto:** Sistema Administrativo-Financeiro (Gestão Rural)
-* **Etapa:** Avaliação N2 - Etapa 1
