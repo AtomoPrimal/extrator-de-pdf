@@ -322,6 +322,12 @@
       gap: 6px;
     }
 
+    .json-box-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .btn-copy {
       padding: 6px 12px;
       font-size: 13px;
@@ -476,9 +482,14 @@
           <span class="json-box-title">
             <span>&lt;&gt;</span> Dados em JSON
           </span>
-          <button type="button" class="btn-copy" id="btnCopyJson" onclick="copyJsonToClipboard()">
-            📋 Copiar JSON
-          </button>
+          <div class="json-box-actions">
+            <button type="button" class="btn-copy" id="btnCopyJson" onclick="copyJsonToClipboard()">
+              📋 Copiar JSON
+            </button>
+            <button type="button" class="btn-copy" id="btnDownloadJson" onclick="downloadJsonFile()">
+              ⬇️ Baixar JSON
+            </button>
+          </div>
         </div>
         <pre class="json-display" id="jsonDisplay">{}</pre>
         <div class="json-footer-note">
@@ -601,6 +612,21 @@
         btn.innerHTML = "✅ Copiado!";
         setTimeout(() => { btn.innerHTML = originalText; }, 2000);
       });
+    }
+
+    function downloadJsonFile() {
+      if (!extractedJsonData) return;
+      const text = JSON.stringify(extractedJsonData, null, 2);
+      const blob = new Blob([text], { type: "application/json;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const notaNum = extractedJsonData.numero_nota ? extractedJsonData.numero_nota.replace(/\D/g, "") : "nota";
+      a.href = url;
+      a.download = `nota_fiscal_${notaNum || "extraida"}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function showLoading(msg) {
