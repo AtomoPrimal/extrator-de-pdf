@@ -51,10 +51,18 @@ REGRAS DE EXTRAÇÃO:
    - Forneça também uma breve 'justificativa_classificacao' explicando por que essa categoria foi atribuída.
 """
 
+MODELS_TO_TRY = [
+    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash",
+]
+
 def extract_invoice_data(
     pdf_bytes: bytes,
     api_key: str | None = None,
-    model_name: str = "gemini-2.5-flash"
+    model_name: str | None = None,
 ) -> NotaFiscalExtracao:
     """
     Extrai os dados de uma nota fiscal em PDF utilizando o Google Gemini.
@@ -62,33 +70,41 @@ def extract_invoice_data(
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         raise ValueError(
-            "GEMINI_API_KEY não configurada. Defina a variável de ambiente GEMINI_API_KEY ou informe-a na interface."
+            "GEMINI_API_KEY não configurada. Defina a variável de ambiente GEMINI_API_KEY no arquivo .env."
         )
 
     client = genai.Client(api_key=key)
 
-    response = client.models.generate_content(
-        model=model_name,
-        contents=[
-            types.Part.from_bytes(
-                data=pdf_bytes,
-                mime_type="application/pdf"
-            ),
-            PROMPT_SISTEMA_EXTRACAO
-        ],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=NotaFiscalExtracao,
-            temperature=0.1
-        )
-    )
+    models_sequence = [model_name] if model_name else MODELS_TO_TRY
+    last_error = None
 
-    raw_text = response.text.strip()
+    for candidate_model in models_sequence:
+        try:
+            response = client.models.generate_content(
+                model=candidate_model,
+                contents=[
+                    types.Part.from_bytes(
+                        data=pdf_bytes,
+                        mime_type="application/pdf"
+                    ),
+                    PROMPT_SISTEMA_EXTRACAO
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=NotaFiscalExtracao,
+                    temperature=0.1
+                )
+            )
 
-    # Caso a resposta venha envolvida em markdown block ```json ... ```
-    if raw_text.startswith("```"):
-        raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
-        raw_text = re.sub(r"\s*```$", "", raw_text)
+            raw_text = response.text.strip()
+            if raw_text.startswith("```"):
+                raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+                raw_text = re.sub(r"\s*```$", "", raw_text)
 
-    data_dict = json.loads(raw_text)
-    return NotaFiscalExtracao(**data_dict)
+            data_dict = json.loads(raw_text)
+            return NotaFiscalExtracao(**data_dict)
+        except Exception as e:  # noqa: BLE001
+            last_error = e
+            continue
+
+    raise RuntimeError(f"Não foi possível processar o documento com os modelos disponíveis. Erro: {last_error}")
