@@ -1,17 +1,20 @@
+import concurrent.futures
 import io
 import json
 import os
 import re
 import time
+from typing import Optional
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+import httpx
 from pypdf import PdfReader
 
 from app.schemas import CATEGORIAS_DESPESA_VALIDAS, NotaFiscalExtracao
 
-# Load .env file if present
+# Carrega variáveis do arquivo .env
 load_dotenv()
 
 PROMPT_SISTEMA_EXTRACAO = f"""
@@ -62,36 +65,101 @@ MODELS_TO_TRY = [
     "gemini-3.8-flash",
 ]
 
+
+def _call_gemini(client: genai.Client, candidate_model: str, request_contents: list, timeout_seconds: float = 15.0) -> NotaFiscalExtracao:
+    """Executa a chamada ao Gemini com timeout rígido em thread separada."""
+    def _do_call():
+        return client.models.generate_content(
+            model=candidate_model,
+            contents=request_contents,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=NotaFiscalExtracao,
+                temperature=0.1,
+            ),
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_do_call)
+        response = future.result(timeout=timeout_seconds)
+
+    raw_text = response.text.strip()
+    if raw_text.startswith("```"):
+        raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+        raw_text = re.sub(r"\s*```$", "", raw_text)
+
+    data_dict = json.loads(raw_text)
+    return NotaFiscalExtracao(**data_dict)
+
+
+def _call_deepseek(deepseek_key: str, text: str, timeout_seconds: float = 15.0) -> NotaFiscalExtracao:
+    """Executa a extração via DeepSeek (failover redundante) com timeout rígido."""
+    headers = {
+        "Authorization": f"Bearer {deepseek_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {
+                "role": "system",
+                "content": f"{PROMPT_SISTEMA_EXTRACAO}\n\nIMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido correspondente ao schema solicitado.",
+            },
+            {
+                "role": "user",
+                "content": f"DADOS DA NOTA FISCAL (DANFE):\n{text}",
+            },
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.1,
+    }
+
+    with httpx.Client(timeout=timeout_seconds) as http_client:
+        resp = http_client.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
+        resp.raise_for_status()
+        res_json = resp.json()
+        raw_text = res_json["choices"][0]["message"]["content"].strip()
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+            raw_text = re.sub(r"\s*```$", "", raw_text)
+        return NotaFiscalExtracao.model_validate_json(raw_text)
+
+
 def extract_invoice_data(
     pdf_bytes: bytes,
-    api_key: str | None = None,
-    model_name: str | None = None,
+    api_key: Optional[str] = None,
+    model_name: Optional[str] = None,
+    timeout_per_api: float = 15.0,
+    max_rounds: int = 2,
 ) -> NotaFiscalExtracao:
     """
-    Extrai os dados de uma nota fiscal em PDF utilizando o Google Gemini.
+    Extrai dados da nota fiscal com redundância e failover entre Gemini e DeepSeek.
+    Se uma API demorar mais que 15 segundos ou falhar, alterna imediatamente para a outra.
     """
-    # Busca a chave com suporte a variações comuns e limpeza de aspas/espaços
-    key = None
+    # 1. Recupera chaves de ambiente
+    gemini_key = None
     if api_key and api_key.strip():
-        key = api_key.strip().strip('"').strip("'")
+        gemini_key = api_key.strip().strip('"').strip("'")
     else:
         for var_name in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY", "API_KEY", "gemini_api_key"]:
             val = os.getenv(var_name)
             if val and val.strip():
-                key = val.strip().strip('"').strip("'")
+                gemini_key = val.strip().strip('"').strip("'")
                 break
 
-    if not key:
+    deepseek_key = None
+    for var_name in ["DEEP_SEEK_API_KEY", "DEEPSEEK_API_KEY", "DEEPSEEK_KEY"]:
+        val = os.getenv(var_name)
+        if val and val.strip():
+            deepseek_key = val.strip().strip('"').strip("'")
+            break
+
+    if not gemini_key and not deepseek_key:
         raise ValueError(
-            "GEMINI_API_KEY não encontrada no servidor. Acesse a aba 'Environment' no painel do Render e verifique se a variável está cadastrada exatamente com o nome 'GEMINI_API_KEY'."
+            "Nenhuma chave de API encontrada. Defina GEMINI_API_KEY ou DEEP_SEEK_API_KEY no arquivo .env."
         )
 
-    client = genai.Client(api_key=key)
-
-    models_sequence = [model_name] if model_name else MODELS_TO_TRY
-    last_error = None
-
-    # Extração de texto local via pypdf: muito mais rápida e evita fila de GPU/visão da API
+    # 2. Extrai texto local do PDF para agilidade máxima
     extracted_text = ""
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
@@ -109,34 +177,39 @@ def extract_invoice_data(
             PROMPT_SISTEMA_EXTRACAO,
         ]
 
-    for candidate_model in models_sequence:
-        for attempt in range(4):
-            try:
-                response = client.models.generate_content(
-                    model=candidate_model,
-                    contents=request_contents,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=NotaFiscalExtracao,
-                        temperature=0.1,
-                    ),
-                )
+    models_sequence = [model_name] if model_name else MODELS_TO_TRY
+    errors_log = []
 
-                raw_text = response.text.strip()
-                if raw_text.startswith("```"):
-                    raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
-                    raw_text = re.sub(r"\s*```$", "", raw_text)
-
-                data_dict = json.loads(raw_text)
-                return NotaFiscalExtracao(**data_dict)
-            except Exception as e:  # noqa: BLE001
-                last_error = e
-                # Se for erro transitório 503 / UNAVAILABLE de demanda da Google, aguarda 2s e tenta de novo
-                err_str = str(e)
-                if ("503" in err_str or "UNAVAILABLE" in err_str) and attempt < 3:
-                    time.sleep(2)
+    # 3. Looping de Redundância e Failover com Timeout de 15 segundos
+    for round_num in range(1, max_rounds + 1):
+        # A) Tenta Gemini (com limite de 15 segundos por modelo)
+        if gemini_key:
+            client = genai.Client(api_key=gemini_key)
+            for candidate_model in models_sequence:
+                try:
+                    return _call_gemini(client, candidate_model, request_contents, timeout_seconds=timeout_per_api)
+                except Exception as e:
+                    errors_log.append(f"Tentativa {round_num} [Gemini - {candidate_model}]: {e}")
+                    # Se o erro for de timeout ou 503, tenta o próximo modelo Gemini
                     continue
-                # Se for outro erro ou esgotou tentativas, pula para o próximo modelo
-                break
 
-    raise RuntimeError(f"Não foi possível processar o documento com os modelos disponíveis. Erro: {last_error}")
+        # B) Alterna para DeepSeek (com limite de 15 segundos)
+        if deepseek_key and extracted_text:
+            try:
+                return _call_deepseek(deepseek_key, extracted_text, timeout_seconds=timeout_per_api)
+            except httpx.HTTPStatusError as hse:
+                if hse.response.status_code == 402:
+                    errors_log.append("Tentativa " + str(round_num) + " [DeepSeek]: Saldo insuficiente na conta (402 Payment Required). Recarregue creditos na plataforma da DeepSeek.")
+                else:
+                    errors_log.append(f"Tentativa {round_num} [DeepSeek]: {hse}")
+            except Exception as e:
+                errors_log.append(f"Tentativa {round_num} [DeepSeek]: {e}")
+
+        # Intervalo breve entre ciclos de failover
+        if round_num < max_rounds:
+            time.sleep(2.0)
+
+    raise RuntimeError(
+        "Todas as tentativas de redundância falharam (Gemini e DeepSeek). Detalhes dos erros: "
+        + " | ".join(errors_log[-2:])
+    )
