@@ -141,29 +141,7 @@
       cursor: not-allowed;
     }
 
-    .api-key-accordion {
-      margin-bottom: 16px;
-      font-size: 13px;
-    }
 
-    .api-key-accordion summary {
-      color: #6b7280;
-      cursor: pointer;
-      margin-bottom: 8px;
-    }
-
-    .api-key-input {
-      width: 100%;
-      padding: 8px 12px;
-      font-size: 13px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      outline: none;
-    }
-
-    .api-key-input:focus {
-      border-color: #4b5563;
-    }
 
     .status-alert {
       display: none;
@@ -382,10 +360,7 @@
         <span id="chipFileSize">0.00 MB</span>
       </div>
 
-      <details class="api-key-accordion">
-        <summary>Configurar chave da API Gemini (opcional se já definida no servidor)</summary>
-        <input type="password" id="apiKeyInput" class="api-key-input" placeholder="Cole sua GEMINI_API_KEY aqui (se necessário)">
-      </details>
+
 
       <button type="button" id="btnExtract" class="btn-submit" disabled>
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -491,7 +466,6 @@
     const btnExtract = document.getElementById("btnExtract");
     const statusAlert = document.getElementById("statusAlert");
     const resultsSection = document.getElementById("resultsSection");
-    const apiKeyInput = document.getElementById("apiKeyInput");
 
     pdfInput.addEventListener("change", function(e) {
       const file = e.target.files[0];
@@ -524,10 +498,6 @@
 
       const formData = new FormData();
       formData.append("file", file);
-      const customKey = apiKeyInput.value.trim();
-      if (customKey) {
-        formData.append("api_key", customKey);
-      }
 
       try {
         const response = await fetch("/api/extrair", {
