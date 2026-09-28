@@ -92,8 +92,41 @@ def _call_gemini(client: genai.Client, candidate_model: str, request_contents: l
     return NotaFiscalExtracao(**data_dict)
 
 
+def _call_groq(groq_key: str, text: str, timeout_seconds: float = 15.0) -> NotaFiscalExtracao:
+    """Executa a extração via Groq Cloud (Llama 3.3 70B gratuito) com timeout rígido."""
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {
+                "role": "system",
+                "content": f"{PROMPT_SISTEMA_EXTRACAO}\n\nIMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido correspondente ao schema solicitado.",
+            },
+            {
+                "role": "user",
+                "content": f"DADOS DA NOTA FISCAL (DANFE):\n{text}",
+            },
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.1,
+    }
+
+    with httpx.Client(timeout=timeout_seconds) as http_client:
+        resp = http_client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+        resp.raise_for_status()
+        res_json = resp.json()
+        raw_text = res_json["choices"][0]["message"]["content"].strip()
+        if raw_text.startswith("```"):
+            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+            raw_text = re.sub(r"\s*```$", "", raw_text)
+        return NotaFiscalExtracao.model_validate_json(raw_text)
+
+
 def _call_deepseek(deepseek_key: str, text: str, timeout_seconds: float = 15.0) -> NotaFiscalExtracao:
-    """Executa a extração via DeepSeek (failover redundante) com timeout rígido."""
+    """Executa a extração via DeepSeek com timeout rígido."""
     headers = {
         "Authorization": f"Bearer {deepseek_key}",
         "Content-Type": "application/json",
@@ -133,20 +166,41 @@ def extract_invoice_data(
     max_rounds: int = 2,
 ) -> NotaFiscalExtracao:
     """
-    Extrai dados da nota fiscal com redundância e failover entre Gemini e DeepSeek.
-    Se uma API demorar mais que 15 segundos ou falhar, alterna imediatamente para a outra.
+    Extrai dados da nota fiscal com redundância e failover entre:
+    1) Gemini Chave 1
+    2) Gemini Chave 2 (se configurada)
+    3) Groq Cloud (Llama 3.3 70B gratuito)
+    4) DeepSeek (se configurada)
+    Se qualquer provedor demorar mais que 15 segundos ou falhar, alterna automaticamente para o próximo.
     """
-    # 1. Recupera chaves de ambiente
-    gemini_key = None
+    # 1. Recupera Chaves do Gemini (Conta 1 e Conta 2)
+    gemini_keys = []
     if api_key and api_key.strip():
-        gemini_key = api_key.strip().strip('"').strip("'")
+        gemini_keys.append(api_key.strip().strip('"').strip("'"))
     else:
         for var_name in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY", "API_KEY", "gemini_api_key"]:
             val = os.getenv(var_name)
             if val and val.strip():
-                gemini_key = val.strip().strip('"').strip("'")
+                gemini_keys.append(val.strip().strip('"').strip("'"))
                 break
 
+    for var_name in ["GEMINI_API_KEY_2", "GEMINI_API_KEY_SECONDARY", "GEMINI_KEY_2", "GOOGLE_API_KEY_2"]:
+        val = os.getenv(var_name)
+        if val and val.strip():
+            cleaned = val.strip().strip('"').strip("'")
+            if cleaned not in gemini_keys:
+                gemini_keys.append(cleaned)
+            break
+
+    # 2. Recupera Chave da Groq Cloud
+    groq_key = None
+    for var_name in ["GROQ_API_KEY", "GROQ_KEY"]:
+        val = os.getenv(var_name)
+        if val and val.strip():
+            groq_key = val.strip().strip('"').strip("'")
+            break
+
+    # 3. Recupera Chave do DeepSeek
     deepseek_key = None
     for var_name in ["DEEP_SEEK_API_KEY", "DEEPSEEK_API_KEY", "DEEPSEEK_KEY"]:
         val = os.getenv(var_name)
@@ -154,12 +208,12 @@ def extract_invoice_data(
             deepseek_key = val.strip().strip('"').strip("'")
             break
 
-    if not gemini_key and not deepseek_key:
+    if not gemini_keys and not groq_key and not deepseek_key:
         raise ValueError(
-            "Nenhuma chave de API encontrada. Defina GEMINI_API_KEY ou DEEP_SEEK_API_KEY no arquivo .env."
+            "Nenhuma chave de API configurada. Defina GEMINI_API_KEY, GEMINI_API_KEY_2 ou GROQ_API_KEY no arquivo .env."
         )
 
-    # 2. Extrai texto local do PDF para agilidade máxima
+    # 4. Extração de texto do PDF via pypdf (instantânea e leve)
     extracted_text = ""
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
@@ -180,36 +234,43 @@ def extract_invoice_data(
     models_sequence = [model_name] if model_name else MODELS_TO_TRY
     errors_log = []
 
-    # 3. Looping de Redundância e Failover com Timeout de 15 segundos
+    # 5. Looping de Redundância e Failover com Timeout de 15 segundos
     for round_num in range(1, max_rounds + 1):
-        # A) Tenta Gemini (com limite de 15 segundos por modelo)
-        if gemini_key:
-            client = genai.Client(api_key=gemini_key)
+        # A) Testa chaves do Gemini (Chave 1 e Chave 2)
+        for idx, g_key in enumerate(gemini_keys, start=1):
+            client = genai.Client(api_key=g_key)
             for candidate_model in models_sequence:
                 try:
                     return _call_gemini(client, candidate_model, request_contents, timeout_seconds=timeout_per_api)
                 except Exception as e:
-                    errors_log.append(f"Tentativa {round_num} [Gemini - {candidate_model}]: {e}")
-                    # Se o erro for de timeout ou 503, tenta o próximo modelo Gemini
+                    errors_log.append(f"R{round_num} [Gemini Conta {idx} - {candidate_model}]: {e}")
+                    # Se falhar ou timeout (>15s), tenta o próximo modelo/chave
                     continue
 
-        # B) Alterna para DeepSeek (com limite de 15 segundos)
+        # B) Alterna para Groq Cloud (Llama 3.3 70B gratuito)
+        if groq_key and extracted_text:
+            try:
+                return _call_groq(groq_key, extracted_text, timeout_seconds=timeout_per_api)
+            except Exception as e:
+                errors_log.append(f"R{round_num} [Groq Llama 3.3]: {e}")
+
+        # C) Alterna para DeepSeek (se configurado)
         if deepseek_key and extracted_text:
             try:
                 return _call_deepseek(deepseek_key, extracted_text, timeout_seconds=timeout_per_api)
             except httpx.HTTPStatusError as hse:
                 if hse.response.status_code == 402:
-                    errors_log.append("Tentativa " + str(round_num) + " [DeepSeek]: Saldo insuficiente na conta (402 Payment Required). Recarregue creditos na plataforma da DeepSeek.")
+                    errors_log.append(f"R{round_num} [DeepSeek]: Saldo insuficiente (402 Payment Required).")
                 else:
-                    errors_log.append(f"Tentativa {round_num} [DeepSeek]: {hse}")
+                    errors_log.append(f"R{round_num} [DeepSeek]: {hse}")
             except Exception as e:
-                errors_log.append(f"Tentativa {round_num} [DeepSeek]: {e}")
+                errors_log.append(f"R{round_num} [DeepSeek]: {e}")
 
-        # Intervalo breve entre ciclos de failover
+        # Intervalo breve entre ciclos de redundância
         if round_num < max_rounds:
-            time.sleep(2.0)
+            time.sleep(1.5)
 
     raise RuntimeError(
-        "Todas as tentativas de redundância falharam (Gemini e DeepSeek). Detalhes dos erros: "
+        "Todas as tentativas de redundância falharam (Gemini, Groq, DeepSeek). Detalhes dos erros: "
         + " | ".join(errors_log[-2:])
     )
