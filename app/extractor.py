@@ -67,10 +67,20 @@ def extract_invoice_data(
     """
     Extrai os dados de uma nota fiscal em PDF utilizando o Google Gemini.
     """
-    key = api_key or os.getenv("GEMINI_API_KEY")
+    # Busca a chave com suporte a variações comuns e limpeza de aspas/espaços
+    key = None
+    if api_key and api_key.strip():
+        key = api_key.strip().strip('"').strip("'")
+    else:
+        for var_name in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY", "API_KEY", "gemini_api_key"]:
+            val = os.getenv(var_name)
+            if val and val.strip():
+                key = val.strip().strip('"').strip("'")
+                break
+
     if not key:
         raise ValueError(
-            "GEMINI_API_KEY não configurada. Defina a variável de ambiente GEMINI_API_KEY no arquivo .env."
+            "GEMINI_API_KEY não encontrada no servidor. Acesse a aba 'Environment' no painel do Render e verifique se a variável está cadastrada exatamente com o nome 'GEMINI_API_KEY'."
         )
 
     client = genai.Client(api_key=key)
