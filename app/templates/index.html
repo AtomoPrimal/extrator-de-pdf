@@ -229,6 +229,36 @@
       display: block;
     }
 
+    /* Scroll interno próprio para a área de dados extraídos */
+    #tabFormatted {
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    #tabFormatted::-webkit-scrollbar,
+    pre.json-display::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    #tabFormatted::-webkit-scrollbar-track,
+    pre.json-display::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+
+    #tabFormatted::-webkit-scrollbar-thumb,
+    pre.json-display::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    #tabFormatted::-webkit-scrollbar-thumb:hover,
+    pre.json-display::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
     /* Formatted view */
     .data-grid {
       display: grid;
@@ -319,7 +349,8 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
       overflow-x: auto;
-      max-height: 480px;
+      overflow-y: auto;
+      max-height: 400px;
       line-height: 1.45;
     }
 
