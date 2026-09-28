@@ -1,10 +1,13 @@
+import io
 import json
 import os
 import re
+import time
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from pypdf import PdfReader
 
 from app.schemas import CATEGORIAS_DESPESA_VALIDAS, NotaFiscalExtracao
 
@@ -52,9 +55,9 @@ REGRAS DE EXTRAÇÃO:
 """
 
 MODELS_TO_TRY = [
-    "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
     "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.8-flash",
 ]
@@ -88,33 +91,52 @@ def extract_invoice_data(
     models_sequence = [model_name] if model_name else MODELS_TO_TRY
     last_error = None
 
+    # Extração de texto local via pypdf: muito mais rápida e evita fila de GPU/visão da API
+    extracted_text = ""
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        extracted_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
+    except Exception:
+        extracted_text = ""
+
+    if extracted_text:
+        request_contents = [
+            f"{PROMPT_SISTEMA_EXTRACAO}\n\n--- DADOS DA NOTA FISCAL (DANFE) ---\n{extracted_text}"
+        ]
+    else:
+        request_contents = [
+            types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+            PROMPT_SISTEMA_EXTRACAO,
+        ]
+
     for candidate_model in models_sequence:
-        try:
-            response = client.models.generate_content(
-                model=candidate_model,
-                contents=[
-                    types.Part.from_bytes(
-                        data=pdf_bytes,
-                        mime_type="application/pdf"
+        for attempt in range(4):
+            try:
+                response = client.models.generate_content(
+                    model=candidate_model,
+                    contents=request_contents,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=NotaFiscalExtracao,
+                        temperature=0.1,
                     ),
-                    PROMPT_SISTEMA_EXTRACAO
-                ],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=NotaFiscalExtracao,
-                    temperature=0.1
                 )
-            )
 
-            raw_text = response.text.strip()
-            if raw_text.startswith("```"):
-                raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
-                raw_text = re.sub(r"\s*```$", "", raw_text)
+                raw_text = response.text.strip()
+                if raw_text.startswith("```"):
+                    raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+                    raw_text = re.sub(r"\s*```$", "", raw_text)
 
-            data_dict = json.loads(raw_text)
-            return NotaFiscalExtracao(**data_dict)
-        except Exception as e:  # noqa: BLE001
-            last_error = e
-            continue
+                data_dict = json.loads(raw_text)
+                return NotaFiscalExtracao(**data_dict)
+            except Exception as e:  # noqa: BLE001
+                last_error = e
+                # Se for erro transitório 503 / UNAVAILABLE de demanda da Google, aguarda 2s e tenta de novo
+                err_str = str(e)
+                if ("503" in err_str or "UNAVAILABLE" in err_str) and attempt < 3:
+                    time.sleep(2)
+                    continue
+                # Se for outro erro ou esgotou tentativas, pula para o próximo modelo
+                break
 
     raise RuntimeError(f"Não foi possível processar o documento com os modelos disponíveis. Erro: {last_error}")
