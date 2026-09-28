@@ -1,1 +1,0 @@
-link de acesso: https://extrator-de-pdf-7onu.onrender.com/
