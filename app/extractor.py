@@ -125,39 +125,6 @@ def _call_groq(groq_key: str, text: str, timeout_seconds: float = 15.0) -> NotaF
         return NotaFiscalExtracao.model_validate_json(raw_text)
 
 
-def _call_deepseek(deepseek_key: str, text: str, timeout_seconds: float = 15.0) -> NotaFiscalExtracao:
-    """Executa a extração via DeepSeek com timeout rígido."""
-    headers = {
-        "Authorization": f"Bearer {deepseek_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "deepseek-chat",
-        "messages": [
-            {
-                "role": "system",
-                "content": f"{PROMPT_SISTEMA_EXTRACAO}\n\nIMPORTANTE: Retorne ESTRITAMENTE um objeto JSON válido correspondente ao schema solicitado.",
-            },
-            {
-                "role": "user",
-                "content": f"DADOS DA NOTA FISCAL (DANFE):\n{text}",
-            },
-        ],
-        "response_format": {"type": "json_object"},
-        "temperature": 0.1,
-    }
-
-    with httpx.Client(timeout=timeout_seconds) as http_client:
-        resp = http_client.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
-        resp.raise_for_status()
-        res_json = resp.json()
-        raw_text = res_json["choices"][0]["message"]["content"].strip()
-        if raw_text.startswith("```"):
-            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
-            raw_text = re.sub(r"\s*```$", "", raw_text)
-        return NotaFiscalExtracao.model_validate_json(raw_text)
-
-
 def extract_invoice_data(
     pdf_bytes: bytes,
     api_key: Optional[str] = None,
@@ -167,10 +134,9 @@ def extract_invoice_data(
 ) -> NotaFiscalExtracao:
     """
     Extrai dados da nota fiscal com redundância e failover entre:
-    1) Gemini Chave 1
-    2) Gemini Chave 2 (se configurada)
-    3) Groq Cloud (Llama 3.3 70B gratuito)
-    4) DeepSeek (se configurada)
+    1) Gemini Chave 1 (Conta Principal)
+    2) Gemini Chave 2 (Segunda Conta Google)
+    3) Groq Cloud (Llama 3.3 70B Gratuito)
     Se qualquer provedor demorar mais que 15 segundos ou falhar, alterna automaticamente para o próximo.
     """
     # 1. Recupera Chaves do Gemini (Conta 1 e Conta 2)
@@ -192,7 +158,7 @@ def extract_invoice_data(
                 gemini_keys.append(cleaned)
             break
 
-    # 2. Recupera Chave da Groq Cloud
+    # 2. Recupera Chave da Groq Cloud (Gratuita)
     groq_key = None
     for var_name in ["GROQ_API_KEY", "GROQ_KEY"]:
         val = os.getenv(var_name)
@@ -200,20 +166,12 @@ def extract_invoice_data(
             groq_key = val.strip().strip('"').strip("'")
             break
 
-    # 3. Recupera Chave do DeepSeek
-    deepseek_key = None
-    for var_name in ["DEEP_SEEK_API_KEY", "DEEPSEEK_API_KEY", "DEEPSEEK_KEY"]:
-        val = os.getenv(var_name)
-        if val and val.strip():
-            deepseek_key = val.strip().strip('"').strip("'")
-            break
-
-    if not gemini_keys and not groq_key and not deepseek_key:
+    if not gemini_keys and not groq_key:
         raise ValueError(
             "Nenhuma chave de API configurada. Defina GEMINI_API_KEY, GEMINI_API_KEY_2 ou GROQ_API_KEY no arquivo .env."
         )
 
-    # 4. Extração de texto do PDF via pypdf (instantânea e leve)
+    # 3. Extração de texto do PDF via pypdf (instantânea e leve)
     extracted_text = ""
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
@@ -234,7 +192,7 @@ def extract_invoice_data(
     models_sequence = [model_name] if model_name else MODELS_TO_TRY
     errors_log = []
 
-    # 5. Looping de Redundância e Failover com Timeout de 15 segundos
+    # 4. Looping de Redundância e Failover com Timeout de 15 segundos
     for round_num in range(1, max_rounds + 1):
         # A) Testa chaves do Gemini (Chave 1 e Chave 2)
         for idx, g_key in enumerate(gemini_keys, start=1):
@@ -254,23 +212,11 @@ def extract_invoice_data(
             except Exception as e:
                 errors_log.append(f"R{round_num} [Groq Llama 3.3]: {e}")
 
-        # C) Alterna para DeepSeek (se configurado)
-        if deepseek_key and extracted_text:
-            try:
-                return _call_deepseek(deepseek_key, extracted_text, timeout_seconds=timeout_per_api)
-            except httpx.HTTPStatusError as hse:
-                if hse.response.status_code == 402:
-                    errors_log.append(f"R{round_num} [DeepSeek]: Saldo insuficiente (402 Payment Required).")
-                else:
-                    errors_log.append(f"R{round_num} [DeepSeek]: {hse}")
-            except Exception as e:
-                errors_log.append(f"R{round_num} [DeepSeek]: {e}")
-
         # Intervalo breve entre ciclos de redundância
         if round_num < max_rounds:
             time.sleep(1.5)
 
     raise RuntimeError(
-        "Todas as tentativas de redundância falharam (Gemini, Groq, DeepSeek). Detalhes dos erros: "
+        "Todas as tentativas de redundância falharam (Gemini e Groq). Detalhes dos erros: "
         + " | ".join(errors_log[-2:])
     )
