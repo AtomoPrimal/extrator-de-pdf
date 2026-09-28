@@ -59,10 +59,12 @@ REGRAS DE EXTRAÇÃO:
 
 MODELS_TO_TRY = [
     "gemini-3.1-flash-lite",
-    "gemini-flash-latest",
     "gemini-3.5-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.8-flash",
+    "gemini-flash-latest",
 ]
 
 
@@ -216,7 +218,15 @@ def extract_invoice_data(
         if round_num < max_rounds:
             time.sleep(1.5)
 
+    missing_hints = []
+    if len(gemini_keys) < 2:
+        missing_hints.append("adicione GEMINI_API_KEY_2 (segunda conta Google)")
+    if not groq_key:
+        missing_hints.append("adicione GROQ_API_KEY (chave gratuita em console.groq.com/keys)")
+
+    dica_str = f" [Dica de contingência: {'; '.join(missing_hints)}]" if missing_hints else ""
+
     raise RuntimeError(
-        "Todas as tentativas de redundância falharam (Gemini e Groq). Detalhes dos erros: "
+        f"Todas as tentativas de redundância falharam (Gemini e Groq).{dica_str} Detalhes dos erros: "
         + " | ".join(errors_log[-2:])
     )
