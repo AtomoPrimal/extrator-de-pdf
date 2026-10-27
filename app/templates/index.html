@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Extração de Dados de Nota Fiscal</title>
+  <title>Projeto Administrativo-Financeiro</title>
   <style>
     * {
       box-sizing: border-box;
@@ -15,33 +15,61 @@
     body {
       background-color: #ffffff;
       color: #1f2937;
-      display: flex;
-      justify-content: center;
-      padding: 40px 20px;
+      padding: 24px 16px 60px;
       line-height: 1.5;
     }
 
     .container {
       width: 100%;
-      max-width: 820px;
+      max-width: 980px;
+      margin: 0 auto;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
 
     .header h1 {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       color: #111827;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .header p {
-      font-size: 15px;
+      font-size: 14px;
       color: #6b7280;
     }
+
+    /* ---------------- Navegação por abas principais ---------------- */
+    .main-nav {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .main-nav-btn {
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+    }
+
+    .main-nav-btn.active {
+      color: #111827;
+      border-bottom-color: #111827;
+    }
+
+    .main-view { display: none; }
+    .main-view.active { display: block; }
 
     .card {
       background: #ffffff;
@@ -67,9 +95,7 @@
       margin-bottom: 16px;
     }
 
-    .file-input-wrapper {
-      margin-bottom: 16px;
-    }
+    .file-input-wrapper { margin-bottom: 16px; }
 
     input[type="file"] {
       display: block;
@@ -87,12 +113,9 @@
       font-weight: 500;
       cursor: pointer;
       margin-right: 12px;
-      transition: background-color 0.15s;
     }
 
-    input[type="file"]::file-selector-button:hover {
-      background-color: #f3f4f6;
-    }
+    input[type="file"]::file-selector-button:hover { background-color: #f3f4f6; }
 
     .file-info-chip {
       display: none;
@@ -107,41 +130,49 @@
       margin-bottom: 16px;
     }
 
-    .file-info-chip .file-name {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      word-break: break-all;
-    }
+    .file-info-chip .file-name { display: flex; align-items: center; gap: 8px; word-break: break-all; }
 
-    .btn-submit {
-      width: 100%;
-      padding: 12px 20px;
-      background-color: #4b5563;
-      color: #ffffff;
+    .btn, .btn-submit, .btn-copy, .btn-secondary {
+      padding: 10px 18px;
       border: none;
       border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.5px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: background-color 0.2s, opacity 0.2s;
+      transition: background-color 0.15s, opacity 0.15s;
     }
 
-    .btn-submit:hover:not(:disabled) {
-      background-color: #374151;
+    .btn-submit {
+      width: 100%;
+      background-color: #4b5563;
+      color: #ffffff;
+      letter-spacing: 0.3px;
     }
+    .btn-submit:hover:not(:disabled) { background-color: #374151; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .btn-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .btn-primary { background-color: #1f2937; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background-color: #111827; }
+
+    .btn-secondary, .btn-copy {
+      background-color: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      font-weight: 500;
     }
+    .btn-secondary:hover, .btn-copy:hover { background-color: #f9fafb; }
 
+    .btn-danger { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-weight: 500; }
+    .btn-danger:hover { background-color: #fee2e2; }
 
+    .btn-success { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 500; }
+    .btn-success:hover { background-color: #dcfce7; }
+
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
 
     .status-alert {
       display: none;
@@ -151,355 +182,440 @@
       margin-bottom: 20px;
     }
 
-    .status-alert.error {
-      display: block;
-      background-color: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
+    .status-alert.error { display: block; background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .status-alert.loading { display: flex; align-items: center; gap: 12px; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .status-alert.ok { display: block; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+
+    .spinner { width: 18px; height: 18px; border: 2px solid #bbf7d0; border-top-color: #166534; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results-section { display: none; }
+    .results-header { font-size: 18px; font-weight: 600; margin-bottom: 14px; color: #111827; }
+
+    .tabs-bar { display: flex; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 16px; background: #f9fafb; }
+    .tab-btn { flex: 1; padding: 10px 16px; font-size: 14px; font-weight: 500; color: #6b7280; background: transparent; border: none; cursor: pointer; text-align: center; }
+    .tab-btn.active { background: #ffffff; color: #111827; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    #tabFormatted { max-height: 420px; overflow-y: auto; padding-right: 8px; }
+
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .data-field { padding: 12px; background-color: #f9fafb; border-radius: 6px; border: 1px solid #f3f4f6; }
+    .data-field.full { grid-column: 1 / -1; }
+    .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 4px; }
+    .field-value { font-size: 14px; font-weight: 500; color: #111827; word-break: break-word; }
+    .category-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight: 700; background-color: #1f2937; color: #ffffff; margin-top: 4px; }
+
+    .json-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .json-box-title { font-size: 14px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 6px; }
+    .json-box-actions { display: flex; align-items: center; gap: 8px; }
+    pre.json-display { background-color: #111827; color: #f3f4f6; padding: 16px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; overflow-x: auto; overflow-y: auto; max-height: 400px; line-height: 1.45; }
+    .json-footer-note { font-size: 12px; color: #6b7280; margin-top: 10px; }
+
+    /* ---------------- Consulta de existência (ETAPA 2) ---------------- */
+    .consulta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .consulta-item { border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; }
+    .consulta-item .entidade { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .consulta-item .nome { font-size: 14px; font-weight: 600; color: #111827; }
+    .consulta-item .doc { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+    .badge-existe { display: inline-block; font-size: 12px; font-weight: 700; color: #1d4ed8; }
+    .badge-nao-existe { display: inline-block; font-size: 12px; font-weight: 700; color: #b91c1c; }
+
+    .lancamento-opcoes { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .radio-label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #374151; cursor: pointer; }
+
+    /* ---------------- Telas de CRUD (Pessoas / Classificação / Contas) ---------------- */
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .toolbar input[type="text"], .toolbar select {
+      padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #374151;
+    }
+    .toolbar input[type="text"] { flex: 1; min-width: 180px; }
+    .toolbar-spacer { flex: 1; }
+
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.data-table th, table.data-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #f3f4f6; }
+    table.data-table th { color: #6b7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; cursor: pointer; user-select: none; white-space: nowrap; }
+    table.data-table th:hover { color: #111827; }
+    table.data-table tbody tr:hover { background-color: #f9fafb; }
+    .empty-row td { text-align: center; color: #9ca3af; padding: 24px; }
+
+    .status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    .status-pill.ATIVO { background-color: #f0fdf4; color: #166534; }
+    .status-pill.INATIVO { background-color: #f3f4f6; color: #6b7280; }
+
+    td.row-actions { white-space: nowrap; }
+    td.row-actions .btn + .btn { margin-left: 6px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-field { display: flex; flex-direction: column; gap: 4px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-field label { font-size: 12px; font-weight: 600; color: #6b7280; }
+    .form-field input, .form-field select {
+      padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827;
     }
 
-    .status-alert.loading {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background-color: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      color: #166534;
-    }
+    .inline-form { display: none; border: 1px dashed #d1d5db; border-radius: 8px; padding: 18px; margin-bottom: 18px; background-color: #f9fafb; }
+    .inline-form.active { display: block; }
+    .inline-form-title { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 12px; }
+    .inline-form-actions { display: flex; gap: 10px; }
 
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid #bbf7d0;
-      border-top-color: #166534;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    .small-note { font-size: 12px; color: #6b7280; margin-top: -8px; margin-bottom: 14px; }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #6b7280; margin-bottom: 12px; }
+    .versao-badge { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 4px; padding: 3px 8px; color: #374151; }
+    .topbar a { color: #374151; font-weight: 600; text-decoration: none; border: 1px solid #d1d5db; border-radius: 5px; padding: 4px 10px; }
+    .topbar a:hover { background: #f9fafb; }
 
-    /* Results section */
-    .results-section {
-      display: none;
-    }
+    .check-list { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; min-height: 40px; }
+    .check-list label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #374151; }
+    .parcela-row { display: grid; grid-template-columns: 60px 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .parcela-row input { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
 
-    .results-header {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 14px;
-      color: #111827;
-    }
-
-    .tabs-bar {
-      display: flex;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 16px;
-      background: #f9fafb;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 10px 16px;
-      font-size: 14px;
-      font-weight: 500;
-      color: #6b7280;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      text-align: center;
-      transition: background-color 0.15s, color 0.15s;
-    }
-
-    .tab-btn.active {
-      background: #ffffff;
-      color: #111827;
-      font-weight: 600;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Scroll interno próprio para a área de dados extraídos */
-    #tabFormatted {
-      max-height: 420px;
-      overflow-y: auto;
-      padding-right: 8px;
-    }
-
-    #tabFormatted::-webkit-scrollbar,
-    pre.json-display::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-
-    #tabFormatted::-webkit-scrollbar-track,
-    pre.json-display::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 4px;
-    }
-
-    #tabFormatted::-webkit-scrollbar-thumb,
-    pre.json-display::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-
-    #tabFormatted::-webkit-scrollbar-thumb:hover,
-    pre.json-display::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-
-    /* Formatted view */
-    .data-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .data-field {
-      padding: 12px;
-      background-color: #f9fafb;
-      border-radius: 6px;
-      border: 1px solid #f3f4f6;
-    }
-
-    .data-field.full {
-      grid-column: 1 / -1;
-    }
-
-    .field-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-
-    .field-value {
-      font-size: 14px;
-      font-weight: 500;
-      color: #111827;
-      word-break: break-word;
-    }
-
-    .category-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 700;
-      background-color: #1f2937;
-      color: #ffffff;
-      margin-top: 4px;
-    }
-
-    /* JSON code view */
-    .json-box-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .json-box-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .json-box-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-copy {
-      padding: 6px 12px;
-      font-size: 13px;
-      border: 1px solid #d1d5db;
-      border-radius: 5px;
-      background-color: #ffffff;
-      color: #374151;
-      cursor: pointer;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background-color 0.15s;
-    }
-
-    .btn-copy:hover {
-      background-color: #f9fafb;
-    }
-
-    pre.json-display {
-      background-color: #111827;
-      color: #f3f4f6;
-      padding: 16px;
-      border-radius: 6px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 13px;
-      overflow-x: auto;
-      overflow-y: auto;
-      max-height: 400px;
-      line-height: 1.45;
-    }
-
-    .json-footer-note {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 10px;
+    @media (max-width: 640px) {
+      .form-grid, .data-grid { grid-template-columns: 1fr; }
+      .table-wrap { overflow-x: auto; }
     }
   </style>
 </head>
 <body>
 
   <div class="container">
+    <div class="topbar">
+      <span>Última atualização no GitHub: <span class="versao-badge" id="versaoCommit" title="">carregando...</span></span>
+      <span>👤 <strong id="usuarioLogado">-</strong> &nbsp; <a href="/logout">Sair</a></span>
+    </div>
     <div class="header">
-      <h1>Extração de Dados de Nota Fiscal</h1>
-      <p>Carregue um PDF de nota fiscal e extraia os dados automaticamente usando IA</p>
+      <h1>Projeto Administrativo-Financeiro</h1>
+      <p>Extração de notas via IA, consulta de cadastros e lançamento automático de contas</p>
     </div>
 
-    <!-- Upload Box -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-        </svg>
-        Upload do PDF
-      </div>
-      <div class="card-subtitle">Selecione o arquivo PDF da nota fiscal</div>
+    <div class="main-nav">
+      <button class="main-nav-btn active" data-view="viewExtracao" onclick="switchMainView('viewExtracao')">Extração de Notas</button>
+      <button class="main-nav-btn" data-view="viewPessoas" onclick="switchMainView('viewPessoas')">Pessoas</button>
+      <button class="main-nav-btn" data-view="viewClassificacoes" onclick="switchMainView('viewClassificacoes')">Classificações</button>
+      <button class="main-nav-btn" data-view="viewContas" onclick="switchMainView('viewContas')">Contas</button>
+    </div>
 
-      <div class="file-input-wrapper">
-        <input type="file" id="pdfInput" accept="application/pdf">
-      </div>
-
-      <div id="fileChip" class="file-info-chip">
-        <div class="file-name">
-          <span>📄</span>
-          <span id="chipFileName">nome_arquivo.pdf</span>
+    <!-- ============================================================= -->
+    <!-- VIEW: EXTRAÇÃO (1ª Etapa) + CONSULTA/LANÇAMENTO (2ª Etapa)      -->
+    <!-- ============================================================= -->
+    <div id="viewExtracao" class="main-view active">
+      <div class="card">
+        <div class="card-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          Upload do PDF
         </div>
-        <span id="chipFileSize">0.00 MB</span>
+        <div class="card-subtitle">Selecione o arquivo PDF da nota fiscal (DANFE)</div>
+
+        <div class="file-input-wrapper">
+          <input type="file" id="pdfInput" accept="application/pdf">
+        </div>
+
+        <div id="fileChip" class="file-info-chip">
+          <div class="file-name"><span>📄</span><span id="chipFileName">nome_arquivo.pdf</span></div>
+          <span id="chipFileSize">0.00 MB</span>
+        </div>
+
+        <button type="button" id="btnExtract" class="btn-submit" disabled>
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          EXTRAIR DADOS
+        </button>
       </div>
 
+      <div id="statusAlert" class="status-alert"></div>
 
+      <div id="resultsSection" class="results-section card">
+        <div class="results-header">Dados Extraídos</div>
 
-      <button type="button" id="btnExtract" class="btn-submit" disabled>
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-        </svg>
-        EXTRAIR DADOS
-      </button>
-    </div>
+        <div class="tabs-bar">
+          <button type="button" class="tab-btn active" id="tabBtnFormatted" onclick="switchTab('formatted')">Visualização Formatada</button>
+          <button type="button" class="tab-btn" id="tabBtnJson" onclick="switchTab('json')">JSON</button>
+        </div>
 
-    <!-- Status Alert -->
-    <div id="statusAlert" class="status-alert"></div>
-
-    <!-- Results Box -->
-    <div id="resultsSection" class="results-section card">
-      <div class="results-header">Dados Extraídos</div>
-
-      <div class="tabs-bar">
-        <button type="button" class="tab-btn active" id="tabBtnFormatted" onclick="switchTab('formatted')">Visualização Formatada</button>
-        <button type="button" class="tab-btn" id="tabBtnJson" onclick="switchTab('json')">JSON</button>
-      </div>
-
-      <!-- Tab 1: Formatted View -->
-      <div id="tabFormatted" class="tab-content active">
-        <div class="data-grid">
-          <div class="data-field">
-            <div class="field-label">Fornecedor (Razão Social)</div>
-            <div class="field-value" id="resRazaoSocial">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">CNPJ Fornecedor</div>
-            <div class="field-value" id="resCnpj">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Nome Fantasia</div>
-            <div class="field-value" id="resNomeFantasia">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Faturado (Destinatário)</div>
-            <div class="field-value" id="resFaturadoNome">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">CPF Faturado</div>
-            <div class="field-value" id="resFaturadoCpf">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Número da Nota Fiscal</div>
-            <div class="field-value" id="resNumeroNota">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Data de Emissão</div>
-            <div class="field-value" id="resDataEmissao">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Vencimento (1ª Parcela)</div>
-            <div class="field-value" id="resDataVencimento">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Valor Total</div>
-            <div class="field-value" id="resValorTotal" style="font-weight: 700; color: #047857;">-</div>
-          </div>
-          <div class="data-field">
-            <div class="field-label">Quantidade de Parcelas</div>
-            <div class="field-value" id="resQtdParcelas">-</div>
-          </div>
-          <div class="data-field full">
-            <div class="field-label">Classificação da Despesa (Inferida por IA)</div>
-            <div>
-              <span class="category-badge" id="resClassificacao">-</span>
+        <div id="tabFormatted" class="tab-content active">
+          <div class="data-grid">
+            <div class="data-field"><div class="field-label">Fornecedor (Razão Social)</div><div class="field-value" id="resRazaoSocial">-</div></div>
+            <div class="data-field"><div class="field-label">CNPJ Fornecedor</div><div class="field-value" id="resCnpj">-</div></div>
+            <div class="data-field"><div class="field-label">Nome Fantasia</div><div class="field-value" id="resNomeFantasia">-</div></div>
+            <div class="data-field"><div class="field-label">Faturado (Destinatário)</div><div class="field-value" id="resFaturadoNome">-</div></div>
+            <div class="data-field"><div class="field-label">CPF Faturado</div><div class="field-value" id="resFaturadoCpf">-</div></div>
+            <div class="data-field"><div class="field-label">Número da Nota Fiscal</div><div class="field-value" id="resNumeroNota">-</div></div>
+            <div class="data-field"><div class="field-label">Data de Emissão</div><div class="field-value" id="resDataEmissao">-</div></div>
+            <div class="data-field"><div class="field-label">Vencimento (1ª Parcela)</div><div class="field-value" id="resDataVencimento">-</div></div>
+            <div class="data-field"><div class="field-label">Valor Total</div><div class="field-value" id="resValorTotal" style="font-weight: 700; color: #047857;">-</div></div>
+            <div class="data-field"><div class="field-label">Quantidade de Parcelas</div><div class="field-value" id="resQtdParcelas">-</div></div>
+            <div class="data-field full">
+              <div class="field-label">Classificação da Despesa (Inferida por IA)</div>
+              <div><span class="category-badge" id="resClassificacao">-</span></div>
+              <div style="font-size: 13px; color: #4b5563; margin-top: 6px;" id="resJustificativa"></div>
             </div>
-            <div style="font-size: 13px; color: #4b5563; margin-top: 6px;" id="resJustificativa"></div>
+            <div class="data-field full"><div class="field-label">Descrição dos Produtos / Serviços</div><div class="field-value" id="resDescricaoProdutos" style="white-space: pre-wrap;">-</div></div>
           </div>
-          <div class="data-field full">
-            <div class="field-label">Descrição dos Produtos / Serviços</div>
-            <div class="field-value" id="resDescricaoProdutos" style="white-space: pre-wrap;">-</div>
+        </div>
+
+        <div id="tabJson" class="tab-content">
+          <div class="json-box-header">
+            <span class="json-box-title"><span>&lt;&gt;</span> Dados em JSON</span>
+            <div class="json-box-actions">
+              <button type="button" class="btn-copy" onclick="copyJsonToClipboard()">📋 Copiar JSON</button>
+              <button type="button" class="btn-copy" onclick="downloadJsonFile()">⬇️ Baixar JSON</button>
+            </div>
           </div>
+          <pre class="json-display" id="jsonDisplay">{}</pre>
+          <div class="json-footer-note">Este JSON contém todos os dados extraídos da nota fiscal.</div>
         </div>
       </div>
 
-      <!-- Tab 2: Raw JSON -->
-      <div id="tabJson" class="tab-content">
-        <div class="json-box-header">
-          <span class="json-box-title">
-            <span>&lt;&gt;</span> Dados em JSON
-          </span>
-          <div class="json-box-actions">
-            <button type="button" class="btn-copy" id="btnCopyJson" onclick="copyJsonToClipboard()">
-              📋 Copiar JSON
-            </button>
-            <button type="button" class="btn-copy" id="btnDownloadJson" onclick="downloadJsonFile()">
-              ⬇️ Baixar JSON
-            </button>
+      <!-- ETAPA 2: Consulta de existência -->
+      <div id="consultaSection" class="card" style="display:none;">
+        <div class="card-title">🔎 Consulta de Cadastros</div>
+        <div class="card-subtitle">Verificação se Fornecedor, Faturado e Despesa já existem no banco de dados</div>
+        <div class="consulta-grid" id="consultaGrid"></div>
+
+        <div class="lancamento-opcoes">
+          <strong style="font-size:13px; color:#374151;">Lançar como:</strong>
+          <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_PAGAR" checked> Conta a Pagar</label>
+          <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_RECEBER"> Conta a Receber</label>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btnLancar" onclick="confirmarLancamento()">CONFIRMAR LANÇAMENTO</button>
+        <div id="lancamentoAlert" class="status-alert" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- VIEW: PESSOAS (Manter Fornecedor / Cliente / Faturado)          -->
+    <!-- ============================================================= -->
+    <div id="viewPessoas" class="main-view">
+      <div class="card">
+        <div class="card-title">Manter Pessoas</div>
+        <div class="card-subtitle">Fornecedor / Cliente e Faturado</div>
+
+        <div class="toolbar">
+          <select id="pessoaFiltroTipo">
+            <option value="">Todos os tipos</option>
+            <option value="CLIENTE_FORNECEDOR">Fornecedor / Cliente</option>
+            <option value="FATURADO">Faturado</option>
+          </select>
+          <input type="text" id="pessoaBusca" placeholder="Buscar por nome, CNPJ/CPF ou e-mail...">
+          <button class="btn btn-secondary" onclick="buscarPessoas()">Buscar</button>
+          <button class="btn btn-secondary" onclick="carregarTodosPessoas()">Todos</button>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary" onclick="abrirFormPessoa()">+ Nova Pessoa</button>
+        </div>
+
+        <div id="formPessoa" class="inline-form">
+          <div class="inline-form-title" id="formPessoaTitulo">Novo Cadastro de Pessoa</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Tipo</label>
+              <select id="fpTipo">
+                <option value="CLIENTE_FORNECEDOR">Fornecedor / Cliente</option>
+                <option value="FATURADO">Faturado</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Tipo de Documento</label>
+              <select id="fpTipoDocumento">
+                <option value="CNPJ">CNPJ</option>
+                <option value="CPF">CPF</option>
+              </select>
+            </div>
+            <div class="form-field full"><label>Razão Social / Nome Completo</label><input type="text" id="fpRazaoSocial"></div>
+            <div class="form-field"><label>Nome Fantasia</label><input type="text" id="fpNomeFantasia"></div>
+            <div class="form-field"><label>CNPJ / CPF</label><input type="text" id="fpDocumento"></div>
+            <div class="form-field"><label>E-mail</label><input type="text" id="fpEmail"></div>
+            <div class="form-field"><label>Telefone</label><input type="text" id="fpTelefone"></div>
+          </div>
+          <div class="inline-form-actions">
+            <button class="btn btn-primary" onclick="salvarPessoa()">Salvar</button>
+            <button class="btn btn-secondary" onclick="fecharFormPessoa()">Cancelar</button>
           </div>
         </div>
-        <pre class="json-display" id="jsonDisplay">{}</pre>
-        <div class="json-footer-note">
-          Este JSON contém todos os dados extraídos da nota fiscal e pode ser usado para integração com outros sistemas.
+
+        <div class="table-wrap"><table class="data-table" id="tabelaPessoas">
+          <thead>
+            <tr>
+              <th onclick="ordenarTabela('pessoas','tipo')">Tipo</th>
+              <th onclick="ordenarTabela('pessoas','razao_social')">Nome / Razão Social</th>
+              <th onclick="ordenarTabela('pessoas','documento')">Documento</th>
+              <th onclick="ordenarTabela('pessoas','email')">E-mail</th>
+              <th onclick="ordenarTabela('pessoas','status')">Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpoTabelaPessoas"><tr class="empty-row"><td colspan="6">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- VIEW: CLASSIFICAÇÕES (Manter Tipo de Despesa / Receita)         -->
+    <!-- ============================================================= -->
+    <div id="viewClassificacoes" class="main-view">
+      <div class="card">
+        <div class="card-title">Manter Classificação</div>
+        <div class="card-subtitle">Tipo de Despesa / Tipo de Receita</div>
+
+        <div class="toolbar">
+          <select id="classFiltroTipo">
+            <option value="">Todos os tipos</option>
+            <option value="DESPESA">Despesa</option>
+            <option value="RECEITA">Receita</option>
+          </select>
+          <input type="text" id="classBusca" placeholder="Buscar por descrição...">
+          <button class="btn btn-secondary" onclick="buscarClassificacoes()">Buscar</button>
+          <button class="btn btn-secondary" onclick="carregarTodosClassificacoes()">Todos</button>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary" onclick="abrirFormClassificacao()">+ Nova Classificação</button>
         </div>
+
+        <div id="formClassificacao" class="inline-form">
+          <div class="inline-form-title" id="formClassTitulo">Nova Classificação</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Tipo</label>
+              <select id="fcTipo">
+                <option value="DESPESA">Despesa</option>
+                <option value="RECEITA">Receita</option>
+              </select>
+            </div>
+            <div class="form-field"><label>Descrição</label><input type="text" id="fcDescricao"></div>
+          </div>
+          <div class="inline-form-actions">
+            <button class="btn btn-primary" onclick="salvarClassificacao()">Salvar</button>
+            <button class="btn btn-secondary" onclick="fecharFormClassificacao()">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="table-wrap"><table class="data-table" id="tabelaClassificacoes">
+          <thead>
+            <tr>
+              <th onclick="ordenarTabela('classificacoes','tipo')">Tipo</th>
+              <th onclick="ordenarTabela('classificacoes','descricao')">Descrição</th>
+              <th onclick="ordenarTabela('classificacoes','status')">Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpoTabelaClassificacoes"><tr class="empty-row"><td colspan="4">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- VIEW: CONTAS (Registrar Contas a Pagar / a Receber)             -->
+    <!-- ============================================================= -->
+    <div id="viewContas" class="main-view">
+      <div class="card">
+        <div class="card-title">Registrar Contas</div>
+        <div class="card-subtitle">Contas a Pagar / Contas a Receber — lançadas automaticamente pela aba "Extração de Notas" ou manualmente aqui</div>
+
+        <div class="toolbar">
+          <select id="contaFiltroTipo">
+            <option value="">Todos os tipos</option>
+            <option value="A_PAGAR">Contas a Pagar</option>
+            <option value="A_RECEBER">Contas a Receber</option>
+          </select>
+          <input type="text" id="contaBusca" placeholder="Buscar por nº da nota, fornecedor...">
+          <button class="btn btn-secondary" onclick="buscarContas()">Buscar</button>
+          <button class="btn btn-secondary" onclick="carregarTodosContas()">Todos</button>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary" onclick="abrirFormConta()">+ Nova Conta</button>
+        </div>
+
+        <div id="formConta" class="inline-form">
+          <div class="inline-form-title" id="formContaTitulo">Nova Conta</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Tipo</label>
+              <select id="fmTipo" onchange="carregarOpcoesClassificacao()">
+                <option value="A_PAGAR">Conta a Pagar</option>
+                <option value="A_RECEBER">Conta a Receber</option>
+              </select>
+            </div>
+            <div class="form-field"><label>Nº Documento / Nota</label><input type="text" id="fmNumero"></div>
+            <div class="form-field">
+              <label>Fornecedor / Cliente</label>
+              <select id="fmFornecedor"></select>
+            </div>
+            <div class="form-field">
+              <label>Faturado</label>
+              <select id="fmFaturado"></select>
+            </div>
+            <div class="form-field"><label>Data de Emissão (DD/MM/AAAA)</label><input type="text" id="fmEmissao" placeholder="DD/MM/AAAA"></div>
+            <div class="form-field"><label>Valor Total (R$)</label><input type="number" step="0.01" id="fmValor"></div>
+            <div class="form-field full"><label>Descrição</label><input type="text" id="fmDescricao"></div>
+            <div class="form-field full">
+              <label>Classificações (uma ou mais)</label>
+              <div class="check-list" id="fmClassificacoes"></div>
+            </div>
+            <div class="form-field full">
+              <label>Parcelas (uma ou mais, com vencimentos distintos)</label>
+              <div id="fmParcelas"></div>
+              <div><button type="button" class="btn btn-secondary btn-sm" onclick="adicionarLinhaParcela()">+ Parcela</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="dividirValorParcelas()">Dividir valor igualmente</button></div>
+            </div>
+          </div>
+          <div class="inline-form-actions">
+            <button class="btn btn-primary" onclick="salvarConta()">Salvar</button>
+            <button class="btn btn-secondary" onclick="fecharFormConta()">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="table-wrap"><table class="data-table" id="tabelaContas">
+          <thead>
+            <tr>
+              <th onclick="ordenarTabela('contas','tipo')">Tipo</th>
+              <th onclick="ordenarTabela('contas','numero_nota')">Nº Nota</th>
+              <th>Fornecedor</th>
+              <th>Faturado</th>
+              <th>Classificação</th>
+              <th onclick="ordenarTabela('contas','valor_total')">Valor Total</th>
+              <th>Parcelas</th>
+              <th onclick="ordenarTabela('contas','status')">Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpoTabelaContas"><tr class="empty-row"><td colspan="9">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+        </table></div>
       </div>
     </div>
   </div>
 
   <script>
+    /* ======================= Sessão / versão ======================= */
+    const _fetchOriginal = window.fetch.bind(window);
+    window.fetch = async (...args) => {
+      const resp = await _fetchOriginal(...args);
+      if (resp.status === 401) { window.location.href = "/login"; }
+      return resp;
+    };
+
+    (async function carregarVersao() {
+      try {
+        const resp = await fetch("/api/versao");
+        const v = await resp.json();
+        const el = document.getElementById("versaoCommit");
+        el.textContent = v.commit_curto;
+        el.title = v.commit + (v.branch ? " (" + v.branch + ")" : "");
+        document.getElementById("usuarioLogado").textContent = v.usuario || "-";
+      } catch (e) { document.getElementById("versaoCommit").textContent = "indisponível"; }
+    })();
+
+    /* ======================= Navegação principal ======================= */
+    function switchMainView(viewId) {
+      document.querySelectorAll(".main-view").forEach(v => v.classList.remove("active"));
+      document.querySelectorAll(".main-nav-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById(viewId).classList.add("active");
+      document.querySelector(`.main-nav-btn[data-view="${viewId}"]`).classList.add("active");
+    }
+
+    /* ======================= ETAPA 1: Extração ======================= */
     let extractedJsonData = null;
     const pdfInput = document.getElementById("pdfInput");
     const fileChip = document.getElementById("fileChip");
@@ -508,6 +624,7 @@
     const btnExtract = document.getElementById("btnExtract");
     const statusAlert = document.getElementById("statusAlert");
     const resultsSection = document.getElementById("resultsSection");
+    const consultaSection = document.getElementById("consultaSection");
 
     pdfInput.addEventListener("change", function(e) {
       const file = e.target.files[0];
@@ -537,26 +654,21 @@
       btnExtract.disabled = true;
       showLoading("Enviando e processando nota fiscal com o Gemini...");
       resultsSection.style.display = "none";
+      consultaSection.style.display = "none";
 
       const formData = new FormData();
       formData.append("file", file);
 
       try {
-        const response = await fetch("/api/extrair", {
-          method: "POST",
-          body: formData
-        });
-
+        const response = await fetch("/api/extrair", { method: "POST", body: formData });
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || "Erro ao processar o arquivo.");
-        }
+        if (!response.ok) throw new Error(data.detail || "Erro ao processar o arquivo.");
 
         extractedJsonData = data;
         renderData(data);
         clearAlert();
         resultsSection.style.display = "block";
+        await consultarCadastros(data);
       } catch (err) {
         showError(err.message || "Falha na comunicação com o servidor.");
       } finally {
@@ -565,7 +677,6 @@
     });
 
     function renderData(data) {
-      // Preenche Visualização Formatada
       document.getElementById("resRazaoSocial").textContent = data.fornecedor?.razao_social || "Não identificado";
       document.getElementById("resCnpj").textContent = data.fornecedor?.cnpj || "Não identificado";
       document.getElementById("resNomeFantasia").textContent = data.fornecedor?.nome_fantasia || "-";
@@ -579,39 +690,20 @@
       document.getElementById("resClassificacao").textContent = data.classificacao_despesa || "NÃO CATEGORIZADO";
       document.getElementById("resJustificativa").textContent = data.justificativa_classificacao ? "Motivo: " + data.justificativa_classificacao : "";
       document.getElementById("resDescricaoProdutos").textContent = data.descricao_produtos || "-";
-
-      // Preenche JSON bruto
       document.getElementById("jsonDisplay").textContent = JSON.stringify(data, null, 2);
     }
 
     function switchTab(tab) {
-      const tabFormatted = document.getElementById("tabFormatted");
-      const tabJson = document.getElementById("tabJson");
-      const tabBtnFormatted = document.getElementById("tabBtnFormatted");
-      const tabBtnJson = document.getElementById("tabBtnJson");
-
-      if (tab === "formatted") {
-        tabFormatted.classList.add("active");
-        tabJson.classList.remove("active");
-        tabBtnFormatted.classList.add("active");
-        tabBtnJson.classList.remove("active");
-      } else {
-        tabFormatted.classList.remove("active");
-        tabJson.classList.add("active");
-        tabBtnFormatted.classList.remove("active");
-        tabBtnJson.classList.add("active");
-      }
+      const map = { formatted: ["tabFormatted", "tabBtnFormatted"], json: ["tabJson", "tabBtnJson"] };
+      document.getElementById("tabFormatted").classList.toggle("active", tab === "formatted");
+      document.getElementById("tabJson").classList.toggle("active", tab === "json");
+      document.getElementById("tabBtnFormatted").classList.toggle("active", tab === "formatted");
+      document.getElementById("tabBtnJson").classList.toggle("active", tab === "json");
     }
 
     function copyJsonToClipboard() {
       if (!extractedJsonData) return;
-      const text = JSON.stringify(extractedJsonData, null, 2);
-      navigator.clipboard.writeText(text).then(function() {
-        const btn = document.getElementById("btnCopyJson");
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "✅ Copiado!";
-        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
-      });
+      navigator.clipboard.writeText(JSON.stringify(extractedJsonData, null, 2));
     }
 
     function downloadJsonFile() {
@@ -633,15 +725,463 @@
       statusAlert.className = "status-alert loading";
       statusAlert.innerHTML = '<div class="spinner"></div><span>' + msg + '</span>';
     }
-
     function showError(msg) {
       statusAlert.className = "status-alert error";
       statusAlert.textContent = "Erro: " + msg;
     }
-
     function clearAlert() {
       statusAlert.className = "status-alert";
       statusAlert.innerHTML = "";
+    }
+
+    /* ======================= ETAPA 2: Consulta + Lançamento ======================= */
+    async function consultarCadastros(nota) {
+      try {
+        const resp = await fetch("/api/consultar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nota)
+        });
+        if (!resp.ok) return;
+        const resultado = await resp.json();
+        renderConsulta(resultado);
+        consultaSection.style.display = "block";
+      } catch (e) { /* silencioso: consulta é um passo auxiliar */ }
+    }
+
+    function renderConsulta(resultado) {
+      const grid = document.getElementById("consultaGrid");
+      grid.innerHTML = "";
+      [resultado.fornecedor, resultado.faturado, resultado.despesa].forEach(item => {
+        const div = document.createElement("div");
+        div.className = "consulta-item";
+        div.innerHTML = `
+          <div class="entidade">${item.entidade}</div>
+          <div class="nome">${item.identificador}</div>
+          ${item.documento ? `<div class="doc">${item.documento}</div>` : ""}
+          ${item.existe
+            ? `<span class="badge-existe">EXISTE${item.id ? " — ID: " + item.id : ""}</span>`
+            : `<span class="badge-nao-existe">NÃO EXISTE</span>`}
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    async function confirmarLancamento() {
+      if (!extractedJsonData) return;
+      const tipoMovimento = document.querySelector('input[name="tipoMovimento"]:checked').value;
+      const alertEl = document.getElementById("lancamentoAlert");
+      const btn = document.getElementById("btnLancar");
+      btn.disabled = true;
+      alertEl.className = "status-alert loading";
+      alertEl.innerHTML = '<div class="spinner"></div><span>Lançando registro...</span>';
+
+      try {
+        const resp = await fetch("/api/lancar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nota: extractedJsonData, tipo_movimento: tipoMovimento })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || "Falha ao lançar o registro.");
+
+        const criados = [];
+        if (data.fornecedor_criado) criados.push("Fornecedor");
+        if (data.faturado_criado) criados.push("Faturado");
+        if (data.despesa_criada) criados.push("Classificação");
+        const detalhe = criados.length ? ` Novos cadastros criados: ${criados.join(", ")}.` : " Todos os cadastros já existiam.";
+
+        alertEl.className = "status-alert ok";
+        alertEl.textContent = `✅ ${data.mensagem}${detalhe} (Lançamento Nº ${data.movimento.id})`;
+        await consultarCadastros(extractedJsonData);
+      } catch (err) {
+        alertEl.className = "status-alert error";
+        alertEl.textContent = "Erro: " + (err.message || "Falha ao lançar.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    /* ======================= Utilitários genéricos de tabela ======================= */
+    const estadoTabelas = {
+      pessoas: { dados: [], ordenarCampo: null, ordenarAsc: true },
+      classificacoes: { dados: [], ordenarCampo: null, ordenarAsc: true },
+      contas: { dados: [], ordenarCampo: null, ordenarAsc: true },
+    };
+
+    function ordenarTabela(nome, campo) {
+      const estado = estadoTabelas[nome];
+      if (estado.ordenarCampo === campo) { estado.ordenarAsc = !estado.ordenarAsc; }
+      else { estado.ordenarCampo = campo; estado.ordenarAsc = true; }
+      estado.dados.sort((a, b) => {
+        const va = (a[campo] ?? "").toString().toLowerCase();
+        const vb = (b[campo] ?? "").toString().toLowerCase();
+        if (va < vb) return estado.ordenarAsc ? -1 : 1;
+        if (va > vb) return estado.ordenarAsc ? 1 : -1;
+        return 0;
+      });
+      if (nome === "pessoas") renderTabelaPessoas();
+      if (nome === "classificacoes") renderTabelaClassificacoes();
+      if (nome === "contas") renderTabelaContas();
+    }
+
+    /* ======================= PESSOAS ======================= */
+    async function buscarPessoas() {
+      const tipo = document.getElementById("pessoaFiltroTipo").value;
+      const busca = document.getElementById("pessoaBusca").value.trim();
+      const params = new URLSearchParams();
+      if (tipo) params.set("tipo", tipo);
+      if (busca) params.set("busca", busca);
+      const resp = await fetch("/api/pessoas?" + params.toString());
+      estadoTabelas.pessoas.dados = await resp.json();
+      renderTabelaPessoas();
+    }
+
+    async function carregarTodosPessoas() {
+      const tipo = document.getElementById("pessoaFiltroTipo").value;
+      const params = new URLSearchParams({ todos: "true" });
+      if (tipo) params.set("tipo", tipo);
+      const resp = await fetch("/api/pessoas?" + params.toString());
+      estadoTabelas.pessoas.dados = await resp.json();
+      renderTabelaPessoas();
+    }
+
+    function renderTabelaPessoas() {
+      const corpo = document.getElementById("corpoTabelaPessoas");
+      const dados = estadoTabelas.pessoas.dados;
+      if (!dados.length) {
+        corpo.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+      corpo.innerHTML = dados.map(p => `
+        <tr>
+          <td>${p.tipo === "FATURADO" ? "Faturado" : "Fornecedor/Cliente"}</td>
+          <td>${p.razao_social}${p.nome_fantasia ? " (" + p.nome_fantasia + ")" : ""}</td>
+          <td>${p.documento} <span style="color:#9ca3af;">(${p.tipo_documento})</span></td>
+          <td>${p.email || "-"}</td>
+          <td><span class="status-pill ${p.status}">${p.status}</span></td>
+          <td class="row-actions">
+            <button class="btn btn-secondary btn-sm" onclick='abrirFormPessoa(${JSON.stringify(p)})'>Editar</button>
+            ${p.status === "ATIVO"
+              ? `<button class="btn btn-danger btn-sm" onclick="inativarPessoa(${p.id})">Excluir</button>`
+              : `<button class="btn btn-success btn-sm" onclick="reativarPessoa(${p.id})">Reativar</button>`}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    let pessoaEditandoId = null;
+    function abrirFormPessoa(pessoa) {
+      const form = document.getElementById("formPessoa");
+      form.classList.add("active");
+      pessoaEditandoId = pessoa ? pessoa.id : null;
+      document.getElementById("formPessoaTitulo").textContent = pessoa ? "Editar Pessoa" : "Novo Cadastro de Pessoa";
+      document.getElementById("fpTipo").value = pessoa ? pessoa.tipo : "CLIENTE_FORNECEDOR";
+      document.getElementById("fpTipo").disabled = !!pessoa; // tipo não muda em edição
+      document.getElementById("fpTipoDocumento").value = pessoa ? pessoa.tipo_documento : "CNPJ";
+      document.getElementById("fpRazaoSocial").value = pessoa ? pessoa.razao_social : "";
+      document.getElementById("fpNomeFantasia").value = pessoa ? (pessoa.nome_fantasia || "") : "";
+      document.getElementById("fpDocumento").value = pessoa ? pessoa.documento : "";
+      document.getElementById("fpEmail").value = pessoa ? (pessoa.email || "") : "";
+      document.getElementById("fpTelefone").value = pessoa ? (pessoa.telefone || "") : "";
+      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function fecharFormPessoa() {
+      document.getElementById("formPessoa").classList.remove("active");
+      document.getElementById("fpTipo").disabled = false;
+      pessoaEditandoId = null;
+    }
+
+    async function salvarPessoa() {
+      const payload = {
+        tipo: document.getElementById("fpTipo").value,
+        tipo_documento: document.getElementById("fpTipoDocumento").value,
+        razao_social: document.getElementById("fpRazaoSocial").value.trim(),
+        nome_fantasia: document.getElementById("fpNomeFantasia").value.trim() || null,
+        documento: document.getElementById("fpDocumento").value.trim(),
+        email: document.getElementById("fpEmail").value.trim() || null,
+        telefone: document.getElementById("fpTelefone").value.trim() || null,
+      };
+      if (!payload.razao_social || !payload.documento) {
+        alert("Preencha ao menos Razão Social/Nome e o Documento.");
+        return;
+      }
+      const url = pessoaEditandoId ? `/api/pessoas/${pessoaEditandoId}` : "/api/pessoas";
+      const method = pessoaEditandoId ? "PUT" : "POST";
+      const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
+      fecharFormPessoa();
+      await carregarTodosPessoas();
+    }
+
+    async function inativarPessoa(id) {
+      if (!confirm("Excluir (inativar) este cadastro? Ele poderá ser reativado depois.")) return;
+      await fetch(`/api/pessoas/${id}/inativar`, { method: "POST" });
+      await buscarOuRecarregarPessoas();
+    }
+    async function reativarPessoa(id) {
+      await fetch(`/api/pessoas/${id}/reativar`, { method: "POST" });
+      await buscarOuRecarregarPessoas();
+    }
+    async function buscarOuRecarregarPessoas() {
+      // Recarrega a lista atual (mantém o registro visível mesmo após inativar)
+      const busca = document.getElementById("pessoaBusca").value.trim();
+      const tipo = document.getElementById("pessoaFiltroTipo").value;
+      const params = new URLSearchParams();
+      if (tipo) params.set("tipo", tipo);
+      if (busca) params.set("busca", busca);
+      const resp = await fetch("/api/pessoas?" + params.toString());
+      estadoTabelas.pessoas.dados = await resp.json();
+      renderTabelaPessoas();
+    }
+
+    /* ======================= CLASSIFICAÇÕES ======================= */
+    async function buscarClassificacoes() {
+      const tipo = document.getElementById("classFiltroTipo").value;
+      const busca = document.getElementById("classBusca").value.trim();
+      const params = new URLSearchParams();
+      if (tipo) params.set("tipo", tipo);
+      if (busca) params.set("busca", busca);
+      const resp = await fetch("/api/classificacoes?" + params.toString());
+      estadoTabelas.classificacoes.dados = await resp.json();
+      renderTabelaClassificacoes();
+    }
+    async function carregarTodosClassificacoes() {
+      const tipo = document.getElementById("classFiltroTipo").value;
+      const params = new URLSearchParams({ todos: "true" });
+      if (tipo) params.set("tipo", tipo);
+      const resp = await fetch("/api/classificacoes?" + params.toString());
+      estadoTabelas.classificacoes.dados = await resp.json();
+      renderTabelaClassificacoes();
+    }
+
+    function renderTabelaClassificacoes() {
+      const corpo = document.getElementById("corpoTabelaClassificacoes");
+      const dados = estadoTabelas.classificacoes.dados;
+      if (!dados.length) {
+        corpo.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+      corpo.innerHTML = dados.map(c => `
+        <tr>
+          <td>${c.tipo === "DESPESA" ? "Despesa" : "Receita"}</td>
+          <td>${c.descricao}</td>
+          <td><span class="status-pill ${c.status}">${c.status}</span></td>
+          <td class="row-actions">
+            <button class="btn btn-secondary btn-sm" onclick='abrirFormClassificacao(${JSON.stringify(c)})'>Editar</button>
+            ${c.status === "ATIVO"
+              ? `<button class="btn btn-danger btn-sm" onclick="inativarClassificacao(${c.id})">Excluir</button>`
+              : `<button class="btn btn-success btn-sm" onclick="reativarClassificacao(${c.id})">Reativar</button>`}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    let classEditandoId = null;
+    function abrirFormClassificacao(c) {
+      const form = document.getElementById("formClassificacao");
+      form.classList.add("active");
+      classEditandoId = c ? c.id : null;
+      document.getElementById("formClassTitulo").textContent = c ? "Editar Classificação" : "Nova Classificação";
+      document.getElementById("fcTipo").value = c ? c.tipo : "DESPESA";
+      document.getElementById("fcTipo").disabled = !!c;
+      document.getElementById("fcDescricao").value = c ? c.descricao : "";
+      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function fecharFormClassificacao() {
+      document.getElementById("formClassificacao").classList.remove("active");
+      document.getElementById("fcTipo").disabled = false;
+      classEditandoId = null;
+    }
+
+    async function salvarClassificacao() {
+      const payload = {
+        tipo: document.getElementById("fcTipo").value,
+        descricao: document.getElementById("fcDescricao").value.trim(),
+      };
+      if (!payload.descricao) { alert("Informe a descrição."); return; }
+      const url = classEditandoId ? `/api/classificacoes/${classEditandoId}` : "/api/classificacoes";
+      const method = classEditandoId ? "PUT" : "POST";
+      const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
+      fecharFormClassificacao();
+      await carregarTodosClassificacoes();
+    }
+
+    async function inativarClassificacao(id) {
+      if (!confirm("Excluir (inativar) esta classificação? Ela poderá ser reativada depois.")) return;
+      await fetch(`/api/classificacoes/${id}/inativar`, { method: "POST" });
+      await buscarClassificacoes();
+    }
+    async function reativarClassificacao(id) {
+      await fetch(`/api/classificacoes/${id}/reativar`, { method: "POST" });
+      await buscarClassificacoes();
+    }
+
+    /* ======================= CONTAS ======================= */
+    async function buscarContas() {
+      const tipo = document.getElementById("contaFiltroTipo").value;
+      const busca = document.getElementById("contaBusca").value.trim();
+      const params = new URLSearchParams();
+      if (tipo) params.set("tipo", tipo);
+      if (busca) params.set("busca", busca);
+      const resp = await fetch("/api/contas?" + params.toString());
+      estadoTabelas.contas.dados = await resp.json();
+      renderTabelaContas();
+    }
+    async function carregarTodosContas() {
+      const tipo = document.getElementById("contaFiltroTipo").value;
+      const params = new URLSearchParams({ todos: "true" });
+      if (tipo) params.set("tipo", tipo);
+      const resp = await fetch("/api/contas?" + params.toString());
+      estadoTabelas.contas.dados = await resp.json();
+      renderTabelaContas();
+    }
+
+    function renderTabelaContas() {
+      const corpo = document.getElementById("corpoTabelaContas");
+      const dados = estadoTabelas.contas.dados;
+      if (!dados.length) {
+        corpo.innerHTML = '<tr class="empty-row"><td colspan="9">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+      corpo.innerHTML = dados.map(m => `
+        <tr>
+          <td>${m.tipo === "A_PAGAR" ? "A Pagar" : "A Receber"}</td>
+          <td>${m.numero_nota || "-"}</td>
+          <td>${m.fornecedor ? m.fornecedor.razao_social : "-"}</td>
+          <td>${m.faturado ? m.faturado.razao_social : "-"}</td>
+          <td>${m.classificacoes.map(c => c.descricao).join(", ") || "-"}</td>
+          <td>R$ ${Number(m.valor_total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+          <td title="${m.parcelas.filter(p => p.status === 'ATIVO').map(p => p.numero + 'ª: ' + (p.data_vencimento || '-') + ' — R$ ' + Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })).join('\n')}">${m.parcelas.filter(p => p.status === "ATIVO").length}</td>
+          <td><span class="status-pill ${m.status}">${m.status}</span></td>
+          <td class="row-actions">
+            <button class="btn btn-secondary btn-sm" onclick="abrirFormConta(${m.id})">Editar</button>
+            ${m.status === "ATIVO"
+              ? `<button class="btn btn-danger btn-sm" onclick="inativarConta(${m.id})">Excluir</button>`
+              : `<button class="btn btn-success btn-sm" onclick="reativarConta(${m.id})">Reativar</button>`}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function inativarConta(id) {
+      if (!confirm("Excluir (inativar) este lançamento e suas parcelas? Ele poderá ser reativado depois.")) return;
+      await fetch(`/api/contas/${id}/inativar`, { method: "POST" });
+      await buscarContas();
+    }
+    /* ---------- Formulário de Conta (registrar / editar) ---------- */
+    let contaEditandoId = null;
+    let classificacoesSelecionadas = [];
+
+    async function carregarOpcoesPessoas() {
+      const [forn, fat] = await Promise.all([
+        fetch("/api/pessoas?todos=true&tipo=CLIENTE_FORNECEDOR").then(r => r.json()),
+        fetch("/api/pessoas?todos=true&tipo=FATURADO").then(r => r.json()),
+      ]);
+      const opt = lista => '<option value="">-- selecione --</option>' +
+        lista.map(p => `<option value="${p.id}">${p.razao_social} (${p.documento})</option>`).join("");
+      document.getElementById("fmFornecedor").innerHTML = opt(forn);
+      document.getElementById("fmFaturado").innerHTML = opt(fat);
+    }
+
+    async function carregarOpcoesClassificacao() {
+      const tipoConta = document.getElementById("fmTipo").value;
+      const tipoClass = tipoConta === "A_PAGAR" ? "DESPESA" : "RECEITA";
+      const lista = await fetch(`/api/classificacoes?todos=true&tipo=${tipoClass}`).then(r => r.json());
+      const box = document.getElementById("fmClassificacoes");
+      box.innerHTML = lista.length
+        ? lista.map(c => `<label><input type="checkbox" value="${c.id}" ${classificacoesSelecionadas.includes(c.id) ? "checked" : ""}> ${c.descricao}</label>`).join("")
+        : `<span style="font-size:12px;color:#9ca3af;">Nenhuma classificação de ${tipoClass} ativa. Cadastre na aba Classificações.</span>`;
+    }
+
+    function adicionarLinhaParcela(p) {
+      const cont = document.getElementById("fmParcelas");
+      const n = cont.children.length + 1;
+      const row = document.createElement("div");
+      row.className = "parcela-row";
+      row.innerHTML = `
+        <input type="number" class="pNumero" value="${p?.numero ?? n}" title="Nº">
+        <input type="text" class="pVenc" placeholder="Vencimento DD/MM/AAAA" value="${p?.data_vencimento ?? ""}">
+        <input type="number" step="0.01" class="pValor" placeholder="Valor" value="${p?.valor ?? ""}">
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+      cont.appendChild(row);
+    }
+
+    function dividirValorParcelas() {
+      const total = Number(document.getElementById("fmValor").value || 0);
+      const rows = document.querySelectorAll("#fmParcelas .parcela-row");
+      if (!rows.length || !total) return;
+      const base = Math.floor((total / rows.length) * 100) / 100;
+      rows.forEach((r, i) => {
+        const v = i === rows.length - 1 ? +(total - base * (rows.length - 1)).toFixed(2) : base;
+        r.querySelector(".pValor").value = v;
+      });
+    }
+
+    async function abrirFormConta(id) {
+      contaEditandoId = id || null;
+      classificacoesSelecionadas = [];
+      document.getElementById("fmParcelas").innerHTML = "";
+      await carregarOpcoesPessoas();
+      let m = null;
+      if (id) { m = await fetch(`/api/contas/${id}`).then(r => r.json()); }
+      document.getElementById("formContaTitulo").textContent = m ? `Editar Conta Nº ${m.id}` : "Nova Conta";
+      document.getElementById("fmTipo").value = m ? m.tipo : "A_PAGAR";
+      document.getElementById("fmTipo").disabled = !!m;
+      document.getElementById("fmNumero").value = m?.numero_nota || "";
+      document.getElementById("fmFornecedor").value = m?.fornecedor?.id || "";
+      document.getElementById("fmFaturado").value = m?.faturado?.id || "";
+      document.getElementById("fmEmissao").value = m?.data_emissao || "";
+      document.getElementById("fmValor").value = m?.valor_total ?? "";
+      document.getElementById("fmDescricao").value = m?.descricao_produtos || "";
+      classificacoesSelecionadas = m ? m.classificacoes.map(c => c.id) : [];
+      await carregarOpcoesClassificacao();
+      const parcelas = m ? m.parcelas.filter(p => p.status === "ATIVO") : [];
+      if (parcelas.length) parcelas.forEach(adicionarLinhaParcela); else adicionarLinhaParcela();
+      const form = document.getElementById("formConta");
+      form.classList.add("active");
+      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function fecharFormConta() {
+      document.getElementById("formConta").classList.remove("active");
+      document.getElementById("fmTipo").disabled = false;
+      contaEditandoId = null;
+    }
+
+    async function salvarConta() {
+      const classificacao_ids = [...document.querySelectorAll("#fmClassificacoes input:checked")].map(i => Number(i.value));
+      const parcelas = [...document.querySelectorAll("#fmParcelas .parcela-row")].map((r, i) => ({
+        numero: Number(r.querySelector(".pNumero").value) || i + 1,
+        data_vencimento: r.querySelector(".pVenc").value.trim() || null,
+        valor: Number(r.querySelector(".pValor").value || 0),
+      }));
+      if (!classificacao_ids.length) { alert("Selecione ao menos uma classificação."); return; }
+      if (!parcelas.length) { alert("Informe ao menos uma parcela."); return; }
+      const payload = {
+        tipo: document.getElementById("fmTipo").value,
+        numero_nota: document.getElementById("fmNumero").value.trim() || null,
+        fornecedor_id: Number(document.getElementById("fmFornecedor").value) || null,
+        faturado_id: Number(document.getElementById("fmFaturado").value) || null,
+        data_emissao: document.getElementById("fmEmissao").value.trim() || null,
+        valor_total: Number(document.getElementById("fmValor").value || 0),
+        descricao_produtos: document.getElementById("fmDescricao").value.trim() || null,
+        classificacao_ids,
+        parcelas,
+      };
+      const url = contaEditandoId ? `/api/contas/${contaEditandoId}` : "/api/contas";
+      const method = contaEditandoId ? "PUT" : "POST";
+      if (contaEditandoId) delete payload.tipo;
+      const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
+      fecharFormConta();
+      await carregarTodosContas();
+    }
+
+    async function reativarConta(id) {
+      await fetch(`/api/contas/${id}/reativar`, { method: "POST" });
+      await buscarContas();
     }
   </script>
 </body>

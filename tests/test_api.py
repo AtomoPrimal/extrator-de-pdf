@@ -17,7 +17,7 @@ def test_api_home_page():
     client = TestClient(app)
     response = client.get("/")
     assert response.status_code == 200
-    assert "Extração de Dados de Nota Fiscal" in response.text
+    assert "Projeto Administrativo-Financeiro" in response.text
     assert "EXTRAIR DADOS" in response.text
 
 def test_api_extract_rejects_non_pdf():

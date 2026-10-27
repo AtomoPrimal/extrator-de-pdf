@@ -12,3 +12,8 @@ ENV/
 htmlcov/
 .DS_Store
 Thumbs.db
+
+# Banco de dados local (Etapa 2)
+*.db
+*.sqlite3
+.ruff_cache/
