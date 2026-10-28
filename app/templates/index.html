@@ -489,7 +489,7 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="corpoTabelaPessoas"><tr class="empty-row"><td colspan="6">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+          <tbody id="corpoTabelaPessoas"><tr class="empty-row"><td colspan="6">Carregando registros...</td></tr></tbody>
         </table></div>
       </div>
     </div>
@@ -542,7 +542,7 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="corpoTabelaClassificacoes"><tr class="empty-row"><td colspan="4">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+          <tbody id="corpoTabelaClassificacoes"><tr class="empty-row"><td colspan="4">Carregando registros...</td></tr></tbody>
         </table></div>
       </div>
     </div>
@@ -621,7 +621,7 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="corpoTabelaContas"><tr class="empty-row"><td colspan="9">Use "Buscar" ou "Todos" para carregar os registros.</td></tr></tbody>
+          <tbody id="corpoTabelaContas"><tr class="empty-row"><td colspan="9">Carregando registros...</td></tr></tbody>
         </table></div>
       </div>
     </div>
@@ -653,6 +653,9 @@
       document.querySelectorAll(".main-nav-btn").forEach(b => b.classList.remove("active"));
       document.getElementById(viewId).classList.add("active");
       document.querySelector(`.main-nav-btn[data-view="${viewId}"]`).classList.add("active");
+      // Ao entrar numa tela de cadastro, traz os dados mais recentes do banco
+      const tabelaDaTela = { viewPessoas: "pessoas", viewClassificacoes: "classificacoes", viewContas: "contas" }[viewId];
+      if (tabelaDaTela) recarregarTabela(tabelaDaTela);
     }
 
     /* ======================= ETAPA 1: Extração ======================= */
@@ -1265,6 +1268,9 @@
       await fetch(`/api/contas/${id}/reativar`, { method: "POST" });
       await notificarAlteracao();
     }
+
+    // Ao abrir o sistema, as telas já carregam os registros ATIVOS do banco
+    atualizarTudo();
   </script>
 </body>
 </html>

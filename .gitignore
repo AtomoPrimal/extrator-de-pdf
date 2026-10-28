@@ -17,3 +17,7 @@ Thumbs.db
 *.db
 *.sqlite3
 .ruff_cache/
+
+# Readme de entrega com as chaves da LLM (somente para o Classroom, nunca para o GitHub)
+Readme.txt
+Readme_Classroom.txt
