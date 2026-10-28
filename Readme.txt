@@ -1,7 +1,7 @@
 PROJETO ADMINISTRATIVO-FINANCEIRO - AVALIACAO N2 (ETAPA 2) - UniRV
 
 Link Hospedagem:   https://extrator-de-pdf-7onu.onrender.com
-Repositorio GitHub: {{REPOSITORIO}}
+Repositorio GitHub: https://github.com/AtomoPrimal/extrator-de-pdf
 
 Login:  admin
 Senha:  admin123
@@ -10,7 +10,7 @@ Key (LLM): informada diretamente na postagem do Classroom (nao versionada no
            GitHub por seguranca). No servidor, a chave fica na variavel de
            ambiente GEMINI_API_KEY (failover: GEMINI_API_KEY_2 / GROQ_API_KEY).
 
-Codigo Ultima Atualizacao no GitHub: {{COMMIT}}
+Codigo Ultima Atualizacao no GitHub: exibido no topo da tela principal (atualizado automaticamente a cada deploy)
   -> O mesmo codigo aparece no topo da tela principal do sistema
      ("Ultima atualizacao no GitHub") e na tela de login.
 
