@@ -21,13 +21,13 @@
 
     .container {
       width: 100%;
-      max-width: 980px;
+      max-width: 1280px;
       margin: 0 auto;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .header h1 {
@@ -47,7 +47,7 @@
       display: flex;
       gap: 4px;
       border-bottom: 2px solid #e5e7eb;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
     }
 
@@ -198,7 +198,7 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    #tabFormatted { max-height: 420px; overflow-y: auto; padding-right: 8px; }
+    #tabFormatted { max-height: 380px; overflow-y: auto; padding-right: 8px; }
 
     .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .data-field { padding: 12px; background-color: #f9fafb; border-radius: 6px; border: 1px solid #f3f4f6; }
@@ -214,15 +214,37 @@
     .json-footer-note { font-size: 12px; color: #6b7280; margin-top: 10px; }
 
     /* ---------------- Consulta de existência (ETAPA 2) ---------------- */
-    .consulta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
-    .consulta-item { border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; }
-    .consulta-item .entidade { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .consulta-item .nome { font-size: 14px; font-weight: 600; color: #111827; }
-    .consulta-item .doc { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+    .consulta-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+    .consulta-item { border: 1px solid #e5e7eb; border-left-width: 4px; border-radius: 6px; padding: 10px 12px; }
+    .consulta-item.existe { border-left-color: #2563eb; }
+    .consulta-item.nao-existe { border-left-color: #dc2626; }
+    .consulta-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .consulta-item .entidade { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px; }
+    .consulta-item .nome { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.3; }
+    .consulta-item .doc { font-size: 11px; color: #6b7280; }
+    .consulta-item .badge-existe, .consulta-item .badge-nao-existe { white-space: nowrap; font-size: 11px; }
     .badge-existe { display: inline-block; font-size: 12px; font-weight: 700; color: #1d4ed8; }
     .badge-nao-existe { display: inline-block; font-size: 12px; font-weight: 700; color: #b91c1c; }
 
     .lancamento-opcoes { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+
+    /* Extração (esquerda) + Análise/Lançamento (direita) lado a lado */
+    .extracao-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr); gap: 20px; align-items: start; }
+    .extracao-layout .card { margin-bottom: 16px; }
+    .coluna-analise { position: sticky; top: 12px; }
+    .coluna-analise .card { padding: 18px; }
+    .coluna-analise .card-subtitle { margin-bottom: 12px; }
+    .coluna-analise .resumo-lancamento { margin-bottom: 10px; }
+    .coluna-analise .lancamento-opcoes { margin-bottom: 10px; }
+    .resumo-lancamento { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: #6b7280; margin-bottom: 14px; padding: 10px 12px; background: #f9fafb; border-radius: 6px; }
+    .resumo-lancamento strong { display: block; color: #111827; font-size: 14px; }
+    .analise-vazia { font-size: 13px; color: #9ca3af; border: 1px dashed #e5e7eb; border-radius: 6px; padding: 24px 14px; text-align: center; }
+    #btnLancar { width: 100%; }
+    .atualizado-em { font-size: 11px; color: #9ca3af; margin-left: auto; }
+    @media (max-width: 960px) {
+      .extracao-layout { grid-template-columns: 1fr; }
+      .coluna-analise { position: static; }
+    }
     .radio-label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #374151; cursor: pointer; }
 
     /* ---------------- Telas de CRUD (Pessoas / Classificação / Contas) ---------------- */
@@ -301,6 +323,8 @@
     <!-- VIEW: EXTRAÇÃO (1ª Etapa) + CONSULTA/LANÇAMENTO (2ª Etapa)      -->
     <!-- ============================================================= -->
     <div id="viewExtracao" class="main-view active">
+     <div class="extracao-layout">
+      <div class="coluna-extracao">
       <div class="card">
         <div class="card-title">
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -371,21 +395,37 @@
         </div>
       </div>
 
-      <!-- ETAPA 2: Consulta de existência -->
-      <div id="consultaSection" class="card" style="display:none;">
-        <div class="card-title">🔎 Consulta de Cadastros</div>
-        <div class="card-subtitle">Verificação se Fornecedor, Faturado e Despesa já existem no banco de dados</div>
-        <div class="consulta-grid" id="consultaGrid"></div>
+      </div><!-- /coluna-extracao -->
 
-        <div class="lancamento-opcoes">
-          <strong style="font-size:13px; color:#374151;">Lançar como:</strong>
-          <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_PAGAR" checked> Conta a Pagar</label>
-          <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_RECEBER"> Conta a Receber</label>
+      <!-- ETAPA 2: Análise (consulta de existência) + Lançamento — coluna da direita -->
+      <div class="coluna-analise">
+        <div id="consultaSection" class="card">
+          <div class="card-title">🔎 Análise dos Dados</div>
+          <div class="card-subtitle">Fornecedor, Faturado e Despesa já existem no banco?</div>
+
+          <div id="analiseVazia" class="analise-vazia">Envie um PDF e clique em <strong>EXTRAIR DADOS</strong>.<br>A análise e o lançamento aparecem aqui.</div>
+
+          <div id="analiseConteudo" style="display:none;">
+            <div class="resumo-lancamento">
+              <div>Nota<strong id="resumoNota">-</strong></div>
+              <div>Valor<strong id="resumoValor">-</strong></div>
+              <div>Vencimento<strong id="resumoVenc">-</strong></div>
+              <div>Parcelas<strong id="resumoParcelas">-</strong></div>
+            </div>
+            <div class="consulta-grid" id="consultaGrid"></div>
+
+            <div class="lancamento-opcoes">
+              <strong style="font-size:13px; color:#374151;">Lançar como:</strong>
+              <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_PAGAR" checked> Conta a Pagar</label>
+              <label class="radio-label"><input type="radio" name="tipoMovimento" value="A_RECEBER"> Conta a Receber</label>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="btnLancar" onclick="confirmarLancamento()">CONFIRMAR LANÇAMENTO</button>
+            <div id="lancamentoAlert" class="status-alert" style="margin-top:14px;"></div>
+          </div>
         </div>
-
-        <button type="button" class="btn btn-primary" id="btnLancar" onclick="confirmarLancamento()">CONFIRMAR LANÇAMENTO</button>
-        <div id="lancamentoAlert" class="status-alert" style="margin-top:14px;"></div>
       </div>
+     </div><!-- /extracao-layout -->
     </div>
 
     <!-- ============================================================= -->
@@ -654,7 +694,11 @@
       btnExtract.disabled = true;
       showLoading("Enviando e processando nota fiscal com o Gemini...");
       resultsSection.style.display = "none";
-      consultaSection.style.display = "none";
+      mostrarAnalise(false);
+      document.getElementById("lancamentoAlert").className = "status-alert";
+      const btnLancar = document.getElementById("btnLancar");
+      btnLancar.disabled = false;
+      btnLancar.textContent = "CONFIRMAR LANÇAMENTO";
 
       const formData = new FormData();
       formData.append("file", file);
@@ -745,8 +789,20 @@
         if (!resp.ok) return;
         const resultado = await resp.json();
         renderConsulta(resultado);
-        consultaSection.style.display = "block";
+        mostrarAnalise(true);
       } catch (e) { /* silencioso: consulta é um passo auxiliar */ }
+    }
+
+    function mostrarAnalise(visivel) {
+      document.getElementById("analiseVazia").style.display = visivel ? "none" : "block";
+      document.getElementById("analiseConteudo").style.display = visivel ? "block" : "none";
+      if (visivel && extractedJsonData) {
+        const d = extractedJsonData;
+        document.getElementById("resumoNota").textContent = d.numero_nota || "-";
+        document.getElementById("resumoValor").textContent = d.valor_total != null ? "R$ " + Number(d.valor_total).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "-";
+        document.getElementById("resumoVenc").textContent = d.data_vencimento || "-";
+        document.getElementById("resumoParcelas").textContent = (d.parcelas && d.parcelas.length) || d.quantidade_parcelas || 1;
+      }
     }
 
     function renderConsulta(resultado) {
@@ -754,11 +810,13 @@
       grid.innerHTML = "";
       [resultado.fornecedor, resultado.faturado, resultado.despesa].forEach(item => {
         const div = document.createElement("div");
-        div.className = "consulta-item";
+        div.className = "consulta-item " + (item.existe ? "existe" : "nao-existe");
         div.innerHTML = `
-          <div class="entidade">${item.entidade}</div>
-          <div class="nome">${item.identificador}</div>
-          ${item.documento ? `<div class="doc">${item.documento}</div>` : ""}
+          <div>
+            <div class="entidade">${item.entidade}</div>
+            <div class="nome">${item.identificador}</div>
+            ${item.documento ? `<div class="doc">${item.documento}</div>` : ""}
+          </div>
           ${item.existe
             ? `<span class="badge-existe">EXISTE${item.id ? " — ID: " + item.id : ""}</span>`
             : `<span class="badge-nao-existe">NÃO EXISTE</span>`}
@@ -793,26 +851,89 @@
 
         alertEl.className = "status-alert ok";
         alertEl.textContent = `✅ ${data.mensagem}${detalhe} (Lançamento Nº ${data.movimento.id})`;
-        await consultarCadastros(extractedJsonData);
+        btn.textContent = "✓ LANÇADO"; // evita lançar a mesma nota duas vezes
+        await notificarAlteracao();
       } catch (err) {
         alertEl.className = "status-alert error";
         alertEl.textContent = "Erro: " + (err.message || "Falha ao lançar.");
-      } finally {
         btn.disabled = false;
       }
     }
 
     /* ======================= Utilitários genéricos de tabela ======================= */
     const estadoTabelas = {
-      pessoas: { dados: [], ordenarCampo: null, ordenarAsc: true },
-      classificacoes: { dados: [], ordenarCampo: null, ordenarAsc: true },
-      contas: { dados: [], ordenarCampo: null, ordenarAsc: true },
+      pessoas: { dados: [], ordenarCampo: null, ordenarAsc: true, params: null },
+      classificacoes: { dados: [], ordenarCampo: null, ordenarAsc: true, params: null },
+      contas: { dados: [], ordenarCampo: null, ordenarAsc: true, params: null },
+    };
+    const CONFIG_TABELAS = {
+      pessoas: { url: "/api/pessoas", filtro: "pessoaFiltroTipo", busca: "pessoaBusca", render: () => renderTabelaPessoas() },
+      classificacoes: { url: "/api/classificacoes", filtro: "classFiltroTipo", busca: "classBusca", render: () => renderTabelaClassificacoes() },
+      contas: { url: "/api/contas", filtro: "contaFiltroTipo", busca: "contaBusca", render: () => renderTabelaContas() },
     };
 
-    function ordenarTabela(nome, campo) {
+    // Monta os parâmetros a partir da tela: modo "busca" (todos os status) ou "todos" (apenas ATIVOS)
+    function paramsDaTela(nome, modoTodos) {
+      const cfg = CONFIG_TABELAS[nome];
+      const params = {};
+      const tipo = document.getElementById(cfg.filtro).value;
+      if (tipo) params.tipo = tipo;
+      if (modoTodos) { params.todos = "true"; }
+      else {
+        const busca = document.getElementById(cfg.busca).value.trim();
+        if (busca) params.busca = busca;
+      }
+      return params;
+    }
+
+    async function carregarTabela(nome, params) {
       const estado = estadoTabelas[nome];
-      if (estado.ordenarCampo === campo) { estado.ordenarAsc = !estado.ordenarAsc; }
-      else { estado.ordenarCampo = campo; estado.ordenarAsc = true; }
+      estado.params = params;
+      const resp = await fetch(CONFIG_TABELAS[nome].url + "?" + new URLSearchParams(params).toString());
+      if (!resp.ok) return;
+      estado.dados = await resp.json();
+      aplicarOrdenacao(nome);
+      CONFIG_TABELAS[nome].render();
+    }
+
+    // Recarrega a tabela repetindo a última consulta feita pelo usuário
+    // (se ainda não foi carregada, traz os registros ATIVOS).
+    function recarregarTabela(nome) {
+      const estado = estadoTabelas[nome];
+      return carregarTabela(nome, estado.params || paramsDaTela(nome, true));
+    }
+
+    /* ---------- Atualização em tempo real ---------- */
+    const canalAtualizacao = ("BroadcastChannel" in window) ? new BroadcastChannel("financeiro-atualizacoes") : null;
+
+    async function atualizarTudo() {
+      await Promise.all(Object.keys(estadoTabelas).map(recarregarTabela));
+      if (extractedJsonData && document.getElementById("analiseConteudo").style.display !== "none") {
+        await consultarCadastros(extractedJsonData);
+      }
+      if (document.getElementById("formConta").classList.contains("active")) {
+        await atualizarOpcoesFormConta();
+      }
+    }
+
+    // Chamada após qualquer cadastro/edição/exclusão: atualiza todas as telas na hora
+    // e avisa outras abas abertas do sistema no mesmo navegador.
+    async function notificarAlteracao() {
+      await atualizarTudo();
+      if (canalAtualizacao) canalAtualizacao.postMessage({ tipo: "alteracao", em: Date.now() });
+    }
+    if (canalAtualizacao) canalAtualizacao.onmessage = () => atualizarTudo();
+
+    // Alterações feitas por outros usuários: verifica a cada 10s as tabelas já carregadas.
+    setInterval(() => {
+      if (document.hidden) return;
+      Object.keys(estadoTabelas).forEach(nome => { if (estadoTabelas[nome].params) recarregarTabela(nome); });
+    }, 10000);
+
+    function aplicarOrdenacao(nome) {
+      const estado = estadoTabelas[nome];
+      const campo = estado.ordenarCampo;
+      if (!campo) return;
       estado.dados.sort((a, b) => {
         const va = (a[campo] ?? "").toString().toLowerCase();
         const vb = (b[campo] ?? "").toString().toLowerCase();
@@ -820,31 +941,19 @@
         if (va > vb) return estado.ordenarAsc ? 1 : -1;
         return 0;
       });
-      if (nome === "pessoas") renderTabelaPessoas();
-      if (nome === "classificacoes") renderTabelaClassificacoes();
-      if (nome === "contas") renderTabelaContas();
+    }
+
+    function ordenarTabela(nome, campo) {
+      const estado = estadoTabelas[nome];
+      if (estado.ordenarCampo === campo) { estado.ordenarAsc = !estado.ordenarAsc; }
+      else { estado.ordenarCampo = campo; estado.ordenarAsc = true; }
+      aplicarOrdenacao(nome);
+      CONFIG_TABELAS[nome].render();
     }
 
     /* ======================= PESSOAS ======================= */
-    async function buscarPessoas() {
-      const tipo = document.getElementById("pessoaFiltroTipo").value;
-      const busca = document.getElementById("pessoaBusca").value.trim();
-      const params = new URLSearchParams();
-      if (tipo) params.set("tipo", tipo);
-      if (busca) params.set("busca", busca);
-      const resp = await fetch("/api/pessoas?" + params.toString());
-      estadoTabelas.pessoas.dados = await resp.json();
-      renderTabelaPessoas();
-    }
-
-    async function carregarTodosPessoas() {
-      const tipo = document.getElementById("pessoaFiltroTipo").value;
-      const params = new URLSearchParams({ todos: "true" });
-      if (tipo) params.set("tipo", tipo);
-      const resp = await fetch("/api/pessoas?" + params.toString());
-      estadoTabelas.pessoas.dados = await resp.json();
-      renderTabelaPessoas();
-    }
+    function buscarPessoas() { return carregarTabela("pessoas", paramsDaTela("pessoas", false)); }
+    function carregarTodosPessoas() { return carregarTabela("pessoas", paramsDaTela("pessoas", true)); }
 
     function renderTabelaPessoas() {
       const corpo = document.getElementById("corpoTabelaPessoas");
@@ -911,49 +1020,23 @@
       const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
       fecharFormPessoa();
-      await carregarTodosPessoas();
+      if (!estadoTabelas.pessoas.params) estadoTabelas.pessoas.params = paramsDaTela("pessoas", true);
+      await notificarAlteracao();
     }
 
     async function inativarPessoa(id) {
       if (!confirm("Excluir (inativar) este cadastro? Ele poderá ser reativado depois.")) return;
       await fetch(`/api/pessoas/${id}/inativar`, { method: "POST" });
-      await buscarOuRecarregarPessoas();
+      estadoTabelas.pessoas.params = paramsDaTela("pessoas", false); // mantém o inativado visível para Reativar
+      await notificarAlteracao();
     }
     async function reativarPessoa(id) {
       await fetch(`/api/pessoas/${id}/reativar`, { method: "POST" });
-      await buscarOuRecarregarPessoas();
+      await notificarAlteracao();
     }
-    async function buscarOuRecarregarPessoas() {
-      // Recarrega a lista atual (mantém o registro visível mesmo após inativar)
-      const busca = document.getElementById("pessoaBusca").value.trim();
-      const tipo = document.getElementById("pessoaFiltroTipo").value;
-      const params = new URLSearchParams();
-      if (tipo) params.set("tipo", tipo);
-      if (busca) params.set("busca", busca);
-      const resp = await fetch("/api/pessoas?" + params.toString());
-      estadoTabelas.pessoas.dados = await resp.json();
-      renderTabelaPessoas();
-    }
-
     /* ======================= CLASSIFICAÇÕES ======================= */
-    async function buscarClassificacoes() {
-      const tipo = document.getElementById("classFiltroTipo").value;
-      const busca = document.getElementById("classBusca").value.trim();
-      const params = new URLSearchParams();
-      if (tipo) params.set("tipo", tipo);
-      if (busca) params.set("busca", busca);
-      const resp = await fetch("/api/classificacoes?" + params.toString());
-      estadoTabelas.classificacoes.dados = await resp.json();
-      renderTabelaClassificacoes();
-    }
-    async function carregarTodosClassificacoes() {
-      const tipo = document.getElementById("classFiltroTipo").value;
-      const params = new URLSearchParams({ todos: "true" });
-      if (tipo) params.set("tipo", tipo);
-      const resp = await fetch("/api/classificacoes?" + params.toString());
-      estadoTabelas.classificacoes.dados = await resp.json();
-      renderTabelaClassificacoes();
-    }
+    function buscarClassificacoes() { return carregarTabela("classificacoes", paramsDaTela("classificacoes", false)); }
+    function carregarTodosClassificacoes() { return carregarTabela("classificacoes", paramsDaTela("classificacoes", true)); }
 
     function renderTabelaClassificacoes() {
       const corpo = document.getElementById("corpoTabelaClassificacoes");
@@ -1005,38 +1088,24 @@
       const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
       fecharFormClassificacao();
-      await carregarTodosClassificacoes();
+      if (!estadoTabelas.classificacoes.params) estadoTabelas.classificacoes.params = paramsDaTela("classificacoes", true);
+      await notificarAlteracao();
     }
 
     async function inativarClassificacao(id) {
       if (!confirm("Excluir (inativar) esta classificação? Ela poderá ser reativada depois.")) return;
       await fetch(`/api/classificacoes/${id}/inativar`, { method: "POST" });
-      await buscarClassificacoes();
+      estadoTabelas.classificacoes.params = paramsDaTela("classificacoes", false);
+      await notificarAlteracao();
     }
     async function reativarClassificacao(id) {
       await fetch(`/api/classificacoes/${id}/reativar`, { method: "POST" });
-      await buscarClassificacoes();
+      await notificarAlteracao();
     }
 
     /* ======================= CONTAS ======================= */
-    async function buscarContas() {
-      const tipo = document.getElementById("contaFiltroTipo").value;
-      const busca = document.getElementById("contaBusca").value.trim();
-      const params = new URLSearchParams();
-      if (tipo) params.set("tipo", tipo);
-      if (busca) params.set("busca", busca);
-      const resp = await fetch("/api/contas?" + params.toString());
-      estadoTabelas.contas.dados = await resp.json();
-      renderTabelaContas();
-    }
-    async function carregarTodosContas() {
-      const tipo = document.getElementById("contaFiltroTipo").value;
-      const params = new URLSearchParams({ todos: "true" });
-      if (tipo) params.set("tipo", tipo);
-      const resp = await fetch("/api/contas?" + params.toString());
-      estadoTabelas.contas.dados = await resp.json();
-      renderTabelaContas();
-    }
+    function buscarContas() { return carregarTabela("contas", paramsDaTela("contas", false)); }
+    function carregarTodosContas() { return carregarTabela("contas", paramsDaTela("contas", true)); }
 
     function renderTabelaContas() {
       const corpo = document.getElementById("corpoTabelaContas");
@@ -1068,7 +1137,8 @@
     async function inativarConta(id) {
       if (!confirm("Excluir (inativar) este lançamento e suas parcelas? Ele poderá ser reativado depois.")) return;
       await fetch(`/api/contas/${id}/inativar`, { method: "POST" });
-      await buscarContas();
+      estadoTabelas.contas.params = paramsDaTela("contas", false);
+      await notificarAlteracao();
     }
     /* ---------- Formulário de Conta (registrar / editar) ---------- */
     let contaEditandoId = null;
@@ -1083,6 +1153,17 @@
         lista.map(p => `<option value="${p.id}">${p.razao_social} (${p.documento})</option>`).join("");
       document.getElementById("fmFornecedor").innerHTML = opt(forn);
       document.getElementById("fmFaturado").innerHTML = opt(fat);
+    }
+
+    // Atualiza as listas do formulário aberto sem perder o que o usuário já selecionou
+    async function atualizarOpcoesFormConta() {
+      const forn = document.getElementById("fmFornecedor").value;
+      const fat = document.getElementById("fmFaturado").value;
+      classificacoesSelecionadas = [...document.querySelectorAll("#fmClassificacoes input:checked")].map(i => Number(i.value));
+      await carregarOpcoesPessoas();
+      document.getElementById("fmFornecedor").value = forn;
+      document.getElementById("fmFaturado").value = fat;
+      await carregarOpcoesClassificacao();
     }
 
     async function carregarOpcoesClassificacao() {
@@ -1176,12 +1257,13 @@
       const resp = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!resp.ok) { const err = await resp.json(); alert(err.detail || "Erro ao salvar."); return; }
       fecharFormConta();
-      await carregarTodosContas();
+      if (!estadoTabelas.contas.params) estadoTabelas.contas.params = paramsDaTela("contas", true);
+      await notificarAlteracao();
     }
 
     async function reativarConta(id) {
       await fetch(`/api/contas/${id}/reativar`, { method: "POST" });
-      await buscarContas();
+      await notificarAlteracao();
     }
   </script>
 </body>
